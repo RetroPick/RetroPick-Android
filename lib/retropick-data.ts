@@ -265,7 +265,11 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   'inflation': '/images/markets/economics/Fed.webp',
   'fed': '/images/markets/economics/Fed.webp',
 
-  // Climate Entities
+  // Climate & Location Entities
+  'paris': '/images/markets/finance/paris.webp',
+  'temperature in paris': '/images/markets/finance/paris.webp',
+  'el salvador': '/images/markets/crypto/bitcoin.webp',
+  'salvador': '/images/markets/crypto/bitcoin.webp',
   'solar power': '/images/markets/climate/green_energy.webp',
   'wind energy': '/images/markets/climate/green_energy.webp',
   'green energy': '/images/markets/climate/green_energy.webp',

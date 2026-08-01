@@ -105,8 +105,8 @@ function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/30 bg-white p-1 shadow-md overflow-hidden">
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300/80 dark:border-slate-700/80 bg-slate-200/80 dark:bg-slate-800/80 p-0.5 shadow-sm overflow-hidden">
+      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white dark:bg-slate-900 overflow-hidden p-0.5">
         <img
           src={imgSrc}
           alt=""
@@ -242,8 +242,8 @@ export function MarketCard({
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
                     return (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/30 bg-white p-0.5 shadow-xs overflow-hidden group-hover:scale-105 transition-transform">
-                        <div className="flex h-full w-full items-center justify-center rounded-md bg-white overflow-hidden">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-300/80 dark:border-slate-700/80 bg-slate-200/80 dark:bg-slate-800/80 p-0.5 shadow-2xs overflow-hidden group-hover:scale-105 transition-transform">
+                        <div className="flex h-full w-full items-center justify-center rounded-md bg-white dark:bg-slate-900 overflow-hidden p-0.5">
                           <img
                             src={imgSrc}
                             alt={opt.label}

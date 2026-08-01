@@ -105,8 +105,8 @@ function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-1 shadow-sm overflow-hidden">
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-0.5 shadow-sm overflow-hidden">
+      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden p-1">
         <img
           src={imgSrc}
           alt=""
@@ -114,7 +114,7 @@ function MarketThumbnail({ market }: { market: Market }) {
             e.currentTarget.onerror = null
             e.currentTarget.src = '/logo.webp'
           }}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
       </div>
     </div>
@@ -243,7 +243,7 @@ export function MarketCard({
                     if (!imgSrc) return null
                     return (
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-0.5 shadow-2xs overflow-hidden group-hover:scale-105 transition-transform">
-                        <div className="flex h-full w-full items-center justify-center rounded-md bg-white overflow-hidden">
+                        <div className="flex h-full w-full items-center justify-center rounded-md bg-white overflow-hidden p-0.5">
                           <img
                             src={imgSrc}
                             alt={opt.label}
@@ -251,7 +251,7 @@ export function MarketCard({
                               e.currentTarget.onerror = null
                               e.currentTarget.src = '/logo.webp'
                             }}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain"
                           />
                         </div>
                       </div>

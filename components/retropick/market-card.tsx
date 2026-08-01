@@ -105,7 +105,7 @@ function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white p-1 shadow-md overflow-hidden">
+    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-secondary/40 shadow-xs">
       <img
         src={imgSrc}
         alt=""
@@ -113,7 +113,7 @@ function MarketThumbnail({ market }: { market: Market }) {
           e.currentTarget.onerror = null
           e.currentTarget.src = '/logo.webp'
         }}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
       />
     </div>
   )
@@ -240,7 +240,7 @@ export function MarketCard({
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
                     return (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white p-0.5 shadow-xs overflow-hidden group-hover:scale-105 transition-transform">
+                      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-secondary/40 shadow-2xs group-hover:scale-105 transition-transform">
                         <img
                           src={imgSrc}
                           alt={opt.label}
@@ -248,7 +248,7 @@ export function MarketCard({
                             e.currentTarget.onerror = null
                             e.currentTarget.src = '/logo.webp'
                           }}
-                          className="h-full w-full object-contain"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                     )

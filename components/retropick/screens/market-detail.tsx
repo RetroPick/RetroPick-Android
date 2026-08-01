@@ -62,7 +62,7 @@ function MarketDetailImage({ market }: { market: Market }) {
   const src = getSafeMarketImage(market)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white p-1 shadow-md overflow-hidden">
+    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-secondary/40 shadow-xs">
       <img
         src={src}
         alt=""
@@ -70,7 +70,7 @@ function MarketDetailImage({ market }: { market: Market }) {
           e.currentTarget.onerror = null
           e.currentTarget.src = '/logo.webp'
         }}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
       />
     </div>
   )

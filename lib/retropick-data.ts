@@ -242,17 +242,20 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   'quantum': '/images/markets/tech%20&%20AI/quantum.webp',
   'ai robotics': '/images/markets/tech%20&%20AI/AI_robotic.webp',
   'robotics': '/images/markets/tech%20&%20AI/AI_robotic.webp',
+  'ai model': '/images/markets/tech%20&%20AI/AI_robotic.webp',
+  'ai models': '/images/markets/tech%20&%20AI/AI_robotic.webp',
 
   // Browsers & Smartphones Entities
-  'browser': '/images/markets/tech%20&%20AI/chrome.webp',
-  'browsers': '/images/markets/tech%20&%20AI/chrome.webp',
+  'browser': '/images/markets/tech%20&%20AI/browser.webp',
+  'browsers': '/images/markets/tech%20&%20AI/browser.webp',
   'chrome': '/images/markets/tech%20&%20AI/chrome.webp',
   'edge': '/images/markets/tech%20&%20AI/edge.webp',
   'brave': '/images/markets/tech%20&%20AI/brave.webp',
-  'smartphone': '/images/markets/finance/apple_black.webp',
-  'smartphones': '/images/markets/finance/apple_black.webp',
-  'phone': '/images/markets/finance/apple_black.webp',
-  'mobile': '/images/markets/finance/apple_black.webp',
+  'smartphone': '/images/markets/tech%20&%20AI/hp.webp',
+  'smartphones': '/images/markets/tech%20&%20AI/hp.webp',
+  'phone': '/images/markets/tech%20&%20AI/hp.webp',
+  'mobile': '/images/markets/tech%20&%20AI/hp.webp',
+  'hp': '/images/markets/tech%20&%20AI/hp.webp',
 
   // Economics Entities
   'federal reserve': '/images/markets/economics/Fed.webp',

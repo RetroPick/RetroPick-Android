@@ -485,10 +485,10 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
   }
 
   // 9. Sports & Athletes
-  if (/\b(verstappen)\b/i.test(label)) return '/images/markets/Sports/verstappen.webp'
-  if (/\b(norris)\b/i.test(label)) return '/images/markets/Sports/norris.jpg'
-  if (/\b(hamilton)\b/i.test(label)) return '/images/markets/Sports/hamilton.webp'
-  if (/\b(leclerc)\b/i.test(label)) return '/images/markets/Sports/leclerc.jpg'
+  if (/\b(verstappen|max verstappen)\b/i.test(label)) return '/images/markets/Sports/verstappen.webp'
+  if (/\b(norris|lando norris|lando)\b/i.test(label)) return '/images/markets/Sports/norris.webp'
+  if (/\b(hamilton|lewis hamilton)\b/i.test(label)) return '/images/markets/Sports/hamilton.webp'
+  if (/\b(leclerc|charles leclerc|charles)\b/i.test(label)) return '/images/markets/Sports/leclerc.webp'
   if (/\b(tennis)\b/i.test(label)) return '/images/markets/Sports/tennis.webp'
   if (/\b(golf)\b/i.test(label)) return '/images/markets/Sports/golf.webp'
   if (/\b(esport|esports)\b/i.test(label)) return '/images/markets/Sports/esport.webp'

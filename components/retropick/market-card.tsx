@@ -274,18 +274,16 @@ export function MarketCard({
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
                     return (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-300 dark:bg-slate-800 p-0.5 shadow-2xs overflow-hidden group-hover:scale-105 transition-transform">
-                        <div className="flex h-full w-full items-center justify-center rounded-md bg-white overflow-hidden p-0.5">
-                          <img
-                            src={imgSrc}
-                            alt={opt.label}
-                            onError={(e) => {
-                              e.currentTarget.onerror = null
-                              e.currentTarget.src = '/logo.webp'
-                            }}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
+                      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-white dark:bg-slate-900 shadow-2xs group-hover:scale-105 transition-transform">
+                        <img
+                          src={imgSrc}
+                          alt={opt.label}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = '/logo.webp'
+                          }}
+                          className="h-full w-full object-contain p-0.5"
+                        />
                       </div>
                     )
                   })()}

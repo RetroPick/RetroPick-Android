@@ -62,15 +62,17 @@ function MarketDetailImage({ market }: { market: Market }) {
   const src = getSafeMarketImage(market)
 
   return (
-    <img
-      src={src}
-      alt=""
-      onError={(e) => {
-        e.currentTarget.onerror = null
-        e.currentTarget.src = 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=200&auto=format&fit=crop&q=80'
-      }}
-      className="h-11 w-11 shrink-0 rounded-lg object-cover border border-border/80 bg-secondary/30 shadow-sm"
-    />
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-1 shadow-sm overflow-hidden">
+      <img
+        src={src}
+        alt=""
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = '/logo.webp'
+        }}
+        className="h-full w-full object-contain"
+      />
+    </div>
   )
 }
 

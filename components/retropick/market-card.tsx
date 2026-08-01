@@ -105,15 +105,17 @@ function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
 
   return (
-    <img
-      src={imgSrc}
-      alt=""
-      onError={(e) => {
-        e.currentTarget.onerror = null
-        e.currentTarget.src = 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=200&auto=format&fit=crop&q=80'
-      }}
-      className="h-11 w-11 shrink-0 rounded-md object-cover border border-border/80 bg-secondary/30 shadow-sm"
-    />
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-1 shadow-sm overflow-hidden">
+      <img
+        src={imgSrc}
+        alt=""
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = '/logo.webp'
+        }}
+        className="h-full w-full object-contain"
+      />
+    </div>
   )
 }
 
@@ -238,11 +240,17 @@ export function MarketCard({
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
                     return (
-                      <img
-                        src={imgSrc}
-                        alt={opt.label}
-                        className="h-7 w-7 rounded-lg object-cover shrink-0 border border-border/60 group-hover:scale-105 transition-transform shadow-2xs"
-                      />
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-white dark:bg-slate-900 p-0.5 shadow-2xs overflow-hidden group-hover:scale-105 transition-transform">
+                        <img
+                          src={imgSrc}
+                          alt={opt.label}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = '/logo.webp'
+                          }}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
                     )
                   })()}
                   <span className="font-bold text-foreground">{opt.label}</span>

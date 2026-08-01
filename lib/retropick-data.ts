@@ -243,6 +243,17 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   'ai robotics': '/images/markets/tech%20&%20AI/AI_robotic.webp',
   'robotics': '/images/markets/tech%20&%20AI/AI_robotic.webp',
 
+  // Browsers & Smartphones Entities
+  'browser': '/images/markets/tech%20&%20AI/chrome.webp',
+  'browsers': '/images/markets/tech%20&%20AI/chrome.webp',
+  'chrome': '/images/markets/tech%20&%20AI/chrome.webp',
+  'edge': '/images/markets/tech%20&%20AI/edge.webp',
+  'brave': '/images/markets/tech%20&%20AI/brave.webp',
+  'smartphone': '/images/markets/finance/apple_black.webp',
+  'smartphones': '/images/markets/finance/apple_black.webp',
+  'phone': '/images/markets/finance/apple_black.webp',
+  'mobile': '/images/markets/finance/apple_black.webp',
+
   // Economics Entities
   'federal reserve': '/images/markets/economics/Fed.webp',
   'jerome powell': '/images/markets/economics/Fed.webp',
@@ -264,7 +275,7 @@ const CATEGORY_FALLBACK_ASSET: Record<string, string> = {
   Crypto: '/images/markets/crypto/bitcoin.webp',
   Sports: '/images/markets/Sports/soccer.webp',
   Finance: '/images/markets/finance/stock.webp',
-  Tech: '/images/markets/tech%20&%20AI/ev.webp',
+  Tech: '/images/markets/tech%20&%20AI/chips.webp',
   AI: '/images/markets/tech%20&%20AI/openAI.webp',
   Economics: '/images/markets/economics/Fed.webp',
   Climate: '/images/markets/climate/climate.webp',

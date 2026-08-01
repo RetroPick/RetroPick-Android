@@ -143,8 +143,8 @@ export function ConnectModal({
               className="flex w-full items-center justify-between rounded-xl border border-border/80 bg-secondary/30 p-3 hover:bg-secondary/60 active:scale-[0.99] transition-all cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs overflow-hidden">
-                  <img src="/google-logo.png" alt="Google" className="h-full w-full object-contain p-0.5 scale-125" />
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs">
+                  <GoogleLogo className="h-5 w-5" />
                 </span>
                 <span className="text-xs font-bold text-foreground">Google</span>
               </div>

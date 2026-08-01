@@ -101,12 +101,44 @@ function BrandIcon({ name }: { name: string }) {
   )
 }
 
+function isLogoAsset(url: string): boolean {
+  if (!url) return false
+  const lower = url.toLowerCase()
+  
+  // Full scenic photos & full cover assets
+  if (
+    lower.includes('paris.webp') ||
+    lower.includes('bitcoin.webp') ||
+    lower.includes('climate.webp') ||
+    lower.includes('green_energy.webp') ||
+    lower.includes('stock.webp') ||
+    lower.includes('fed.webp') ||
+    lower.includes('photo-15') ||
+    lower.includes('unsplash.com')
+  ) {
+    return false
+  }
+
+  // If it's an SVG or contains logo/icon/badge, or is a Polymarket API uploaded icon
+  if (
+    lower.endsWith('.svg') ||
+    lower.includes('logo') ||
+    lower.includes('icon') ||
+    lower.includes('polymarket-upload')
+  ) {
+    return true
+  }
+
+  return false
+}
+
 function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
+  const isLogo = isLogoAsset(imgSrc)
 
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-0.5 shadow-sm overflow-hidden">
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden">
+      <div className={cn("flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden", isLogo && "p-1")}>
         <img
           src={imgSrc}
           alt=""
@@ -114,7 +146,7 @@ function MarketThumbnail({ market }: { market: Market }) {
             e.currentTarget.onerror = null
             e.currentTarget.src = '/logo.webp'
           }}
-          className="h-full w-full object-cover"
+          className={cn("h-full w-full", isLogo ? "object-contain" : "object-cover")}
         />
       </div>
     </div>

@@ -63,7 +63,7 @@ function MarketDetailImage({ market }: { market: Market }) {
 
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-0.5 shadow-sm overflow-hidden">
-      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden p-1">
+      <div className="flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden">
         <img
           src={src}
           alt=""
@@ -71,7 +71,7 @@ function MarketDetailImage({ market }: { market: Market }) {
             e.currentTarget.onerror = null
             e.currentTarget.src = '/logo.webp'
           }}
-          className="h-full w-full object-contain"
+          className="h-full w-full object-cover"
         />
       </div>
     </div>

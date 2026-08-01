@@ -62,7 +62,7 @@ function MarketDetailImage({ market }: { market: Market }) {
   const src = getSafeMarketImage(market)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-white dark:bg-slate-900 p-1 shadow-sm overflow-hidden">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white p-1 shadow-md overflow-hidden">
       <img
         src={src}
         alt=""

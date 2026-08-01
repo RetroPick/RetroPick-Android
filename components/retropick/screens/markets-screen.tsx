@@ -30,26 +30,43 @@ const FILTERS = [
   { id: 'CONVERGENCE', label: 'Convergence', icon: Waypoints },
 ]
 
+function getMarketCardHeight(m: Market): number {
+  if (!m) return 210
+  // Base Card Padding + Top Header + Question text + Volume/TimeFooter = ~135px
+  let height = 135
+
+  if (m.options && m.options.length > 0) {
+    // Each Option row is ~48px + 8px gap
+    const count = Math.min(m.options.length, 4)
+    height += count * 56 + 10
+  } else {
+    // Up/Down or Threshold card has 2 big buttons: ~58px
+    height += 64
+  }
+
+  return height + 14 // +14px gap between cards
+}
+
 function useSimpleVirtualizer({
-  count,
+  items,
   parentRef,
-  estimateSize = 185,
-  overscan = 6,
+  getItemHeight,
+  overscan = 5,
 }: {
-  count: number
+  items: Market[]
   parentRef: React.RefObject<HTMLDivElement | null>
-  estimateSize?: number
+  getItemHeight: (m: Market) => number
   overscan?: number
 }) {
   const [scrollTop, setScrollTop] = useState(0)
-  const [containerHeight, setContainerHeight] = useState(600)
+  const [containerHeight, setContainerHeight] = useState(650)
 
   useEffect(() => {
     const el = parentRef.current
     if (!el) return
 
     const handleScroll = () => setScrollTop(el.scrollTop)
-    const handleResize = () => setContainerHeight(el.clientHeight || 600)
+    const handleResize = () => setContainerHeight(el.clientHeight || 650)
 
     handleResize()
     el.addEventListener('scroll', handleScroll, { passive: true })
@@ -61,22 +78,42 @@ function useSimpleVirtualizer({
     }
   }, [parentRef])
 
-  const startIndex = Math.max(0, Math.floor(scrollTop / estimateSize) - overscan)
-  const endIndex = Math.min(count - 1, Math.ceil((scrollTop + containerHeight) / estimateSize) + overscan)
+  const offsets = useMemo(() => {
+    const arr = [0]
+    for (let i = 0; i < items.length; i++) {
+      arr.push(arr[i] + getItemHeight(items[i]))
+    }
+    return arr
+  }, [items, getItemHeight])
+
+  const totalSize = offsets[items.length] || 0
+
+  let startIndex = 0
+  while (startIndex < items.length && offsets[startIndex + 1] < scrollTop) {
+    startIndex++
+  }
+  startIndex = Math.max(0, startIndex - overscan)
+
+  let endIndex = startIndex
+  while (endIndex < items.length && offsets[endIndex] < scrollTop + containerHeight) {
+    endIndex++
+  }
+  endIndex = Math.min(items.length - 1, endIndex + overscan)
 
   const virtualItems = []
   for (let i = startIndex; i <= endIndex; i++) {
-    if (i >= 0 && i < count) {
+    if (i >= 0 && i < items.length) {
       virtualItems.push({
         index: i,
-        key: i,
-        start: i * estimateSize,
+        key: items[i]?.id || i,
+        start: offsets[i],
+        size: offsets[i + 1] - offsets[i],
       })
     }
   }
 
   return {
-    getTotalSize: () => count * estimateSize,
+    getTotalSize: () => totalSize,
     getVirtualItems: () => virtualItems,
   }
 }
@@ -159,10 +196,10 @@ export function MarketsScreen({
   }, [markets, selectedCategory, filter])
 
   const rowVirtualizer = useSimpleVirtualizer({
-    count: list.length,
+    items: list,
     parentRef,
-    estimateSize: 185,
-    overscan: 6,
+    getItemHeight: getMarketCardHeight,
+    overscan: 5,
   })
 
   useEffect(() => {

@@ -385,10 +385,10 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
     return '/images/markets/tech & AI/tesla.webp'
   }
   if (/\b(xiaomi|xiaomi auto)\b/i.test(label)) {
-    return '/images/markets/tech & AI/xiaomi.png'
+    return '/images/markets/tech & AI/xiaomi.webp'
   }
   if (/\b(volkswagen|vw)\b/i.test(label)) {
-    return '/images/markets/tech & AI/volkswagen.png'
+    return '/images/markets/tech & AI/volkswagen.webp'
   }
   if (/\b(ev|evs|electric vehicle|electric vehicles|rivian|lucid)\b/i.test(label)) {
     return '/images/markets/tech & AI/ev.webp'

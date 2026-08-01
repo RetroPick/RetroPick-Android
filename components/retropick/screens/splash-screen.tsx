@@ -24,7 +24,7 @@ export function SplashScreen() {
 
       {/* Floating logo-splesh.png */}
       <img
-        src="/logo-splesh.png"
+        src="/logo.webp"
         alt="RetroPick Logo"
         className="h-[180px] w-[180px] animate-float-logo object-contain"
       />

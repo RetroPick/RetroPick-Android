@@ -20,7 +20,7 @@ export function Logo({
       style={{ width: size, height: size }}
     >
       <Image
-        src="/LOGO-BARU1.png"
+        src="/logo.webp"
         alt="RetroPick"
         fill
         sizes={`${size}px`}

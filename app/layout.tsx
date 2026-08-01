@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     'RetroPick is a premium prediction market platform for real-world events. Trade Yes or No on crypto, politics, sports and more.',
   generator: 'v0.app',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo.webp',
+    apple: '/logo.webp',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

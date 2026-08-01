@@ -159,9 +159,9 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   'formula 1': '/images/markets/Sports/F1.webp',
   'formula one': '/images/markets/Sports/F1.webp',
   'f1': '/images/markets/Sports/F1.webp',
-  'verstappen': '/images/markets/Sports/verstappen.png',
+  'verstappen': '/images/markets/Sports/verstappen.webp',
   'norris': '/images/markets/Sports/norris.jpg',
-  'hamilton': '/images/markets/Sports/hamilton.png',
+  'hamilton': '/images/markets/Sports/hamilton.webp',
   'leclerc': '/images/markets/Sports/leclerc.jpg',
 
   'baseball': '/images/markets/Sports/baseball.webp',
@@ -195,14 +195,14 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   'solana': '/images/markets/crypto/solana.webp',
   'sol': '/images/markets/crypto/solana.webp',
   'xrp': '/images/markets/crypto/xrp.webp',
-  'base network': '/images/markets/crypto/base.png',
-  'arbitrum': '/images/markets/crypto/arbitrum.png',
-  'optimism': '/images/markets/crypto/optimism.png',
-  'zksync': '/images/markets/crypto/zksync.png',
-  'jupiter': '/images/markets/crypto/jupiter.png',
-  'raydium': '/images/markets/crypto/raydium.png',
-  'orca': '/images/markets/crypto/orca.png',
-  'meteora': '/images/markets/crypto/meteora.png',
+  'base network': '/images/markets/crypto/base.webp',
+  'arbitrum': '/images/markets/crypto/arbitrum.webp',
+  'optimism': '/images/markets/crypto/optimism.webp',
+  'zksync': '/images/markets/crypto/zksync.webp',
+  'jupiter': '/images/markets/crypto/jupiter.webp',
+  'raydium': '/images/markets/crypto/raydium.webp',
+  'orca': '/images/markets/crypto/orca.webp',
+  'meteora': '/images/markets/crypto/meteora.webp',
   'layer 2': '/images/markets/crypto/layer2.webp',
   'l2': '/images/markets/crypto/layer2.webp',
 
@@ -225,11 +225,11 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   // Tech & AI Entities
   'chatgpt': '/images/markets/tech%20&%20AI/openAI.webp',
   'openai': '/images/markets/tech%20&%20AI/openAI.webp',
-  'gemini': '/images/markets/tech%20&%20AI/gemini.png',
-  'claude': '/images/markets/tech%20&%20AI/claude.png',
-  'grok': '/images/markets/tech%20&%20AI/grok.png',
-  'tesla': '/images/markets/tech%20&%20AI/tesla.png',
-  'byd': '/images/markets/tech%20&%20AI/byd.png',
+  'gemini': '/images/markets/tech%20&%20AI/gemini.webp',
+  'claude': '/images/markets/tech%20&%20AI/claude.webp',
+  'grok': '/images/markets/tech%20&%20AI/grok.webp',
+  'tesla': '/images/markets/tech%20&%20AI/tesla.webp',
+  'byd': '/images/markets/tech%20&%20AI/byd.webp',
   'spacex': '/images/markets/tech%20&%20AI/spaceX.webp',
   'starship': '/images/markets/tech%20&%20AI/spaceX.webp',
   'ev': '/images/markets/tech%20&%20AI/ev.webp',
@@ -354,35 +354,35 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
     return '/images/markets/tech & AI/openAI.webp'
   }
   if (/\b(gemini|google gemini)\b/i.test(label)) {
-    return '/images/markets/tech & AI/gemini.png'
+    return '/images/markets/tech & AI/gemini.webp'
   }
   if (/\b(claude|anthropic)\b/i.test(label)) {
-    return '/images/markets/tech & AI/claude.png'
+    return '/images/markets/tech & AI/claude.webp'
   }
   if (/\b(grok|xai)\b/i.test(label)) {
-    return '/images/markets/tech & AI/grok.png'
+    return '/images/markets/tech & AI/grok.webp'
   }
 
   // 2. Web Browsers
   if (/\b(chrome|google chrome)\b/i.test(label)) {
-    return '/images/markets/tech & AI/chrome.png'
+    return '/images/markets/tech & AI/chrome.webp'
   }
   if (/\b(edge|microsoft edge)\b/i.test(label)) {
-    return '/images/markets/tech & AI/edge.png'
+    return '/images/markets/tech & AI/edge.webp'
   }
   if (/\b(arc|arc browser)\b/i.test(label)) {
-    return '/images/markets/tech & AI/arc.png'
+    return '/images/markets/tech & AI/arc.webp'
   }
   if (/\b(brave|brave browser)\b/i.test(label)) {
-    return '/images/markets/tech & AI/brave.png'
+    return '/images/markets/tech & AI/brave.webp'
   }
 
   // 3. EV Automakers
   if (/\b(byd|byd auto)\b/i.test(label)) {
-    return '/images/markets/tech & AI/byd.png'
+    return '/images/markets/tech & AI/byd.webp'
   }
   if (/\b(tesla|tesla inc)\b/i.test(label)) {
-    return '/images/markets/tech & AI/tesla.png'
+    return '/images/markets/tech & AI/tesla.webp'
   }
   if (/\b(xiaomi|xiaomi auto)\b/i.test(label)) {
     return '/images/markets/tech & AI/xiaomi.png'
@@ -410,16 +410,16 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
 
   // 5. Smartphones & Electronics
   if (/\b(apple|iphone)\b/i.test(label)) {
-    return '/images/markets/finance/apple_black.png'
+    return '/images/markets/finance/apple_black.webp'
   }
   if (/\b(samsung|galaxy)\b/i.test(label)) {
-    return '/images/markets/finance/samsung.png'
+    return '/images/markets/finance/samsung.webp'
   }
   if (/\b(pixel|google pixel)\b/i.test(label)) {
-    return '/images/markets/finance/google.png'
+    return '/images/markets/finance/google.webp'
   }
   if (/\b(motorola|lenovo)\b/i.test(label)) {
-    return '/images/markets/finance/motorola.png'
+    return '/images/markets/finance/motorola.webp'
   }
 
   // 6. Financials
@@ -432,16 +432,16 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
 
   // 7. Solana DEXes & Crypto
   if (/\b(jupiter)\b/i.test(label)) {
-    return '/images/markets/crypto/jupiter.png'
+    return '/images/markets/crypto/jupiter.webp'
   }
   if (/\b(raydium)\b/i.test(label)) {
-    return '/images/markets/crypto/raydium.png'
+    return '/images/markets/crypto/raydium.webp'
   }
   if (/\b(orca)\b/i.test(label)) {
-    return '/images/markets/crypto/orca.png'
+    return '/images/markets/crypto/orca.webp'
   }
   if (/\b(meteora)\b/i.test(label)) {
-    return '/images/markets/crypto/meteora.png'
+    return '/images/markets/crypto/meteora.webp'
   }
   if (/\b(solana|sol)\b/i.test(label)) {
     return '/images/markets/crypto/solana.webp'
@@ -458,25 +458,25 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
 
   // 8. Layer 2 Networks
   if (/\b(base|base network|base chain)\b/i.test(label)) {
-    return '/images/markets/crypto/base.png'
+    return '/images/markets/crypto/base.webp'
   }
   if (/\b(arbitrum)\b/i.test(label)) {
-    return '/images/markets/crypto/arbitrum.png'
+    return '/images/markets/crypto/arbitrum.webp'
   }
   if (/\b(optimism|op mainnet)\b/i.test(label)) {
-    return '/images/markets/crypto/optimism.png'
+    return '/images/markets/crypto/optimism.webp'
   }
   if (/\b(zksync)\b/i.test(label)) {
-    return '/images/markets/crypto/zksync.png'
+    return '/images/markets/crypto/zksync.webp'
   }
   if (/\b(l2|layer2)\b/i.test(label)) {
     return '/images/markets/crypto/layer2.webp'
   }
 
   // 9. Sports & Athletes
-  if (/\b(verstappen)\b/i.test(label)) return '/images/markets/Sports/verstappen.png'
+  if (/\b(verstappen)\b/i.test(label)) return '/images/markets/Sports/verstappen.webp'
   if (/\b(norris)\b/i.test(label)) return '/images/markets/Sports/norris.jpg'
-  if (/\b(hamilton)\b/i.test(label)) return '/images/markets/Sports/hamilton.png'
+  if (/\b(hamilton)\b/i.test(label)) return '/images/markets/Sports/hamilton.webp'
   if (/\b(leclerc)\b/i.test(label)) return '/images/markets/Sports/leclerc.jpg'
   if (/\b(tennis)\b/i.test(label)) return '/images/markets/Sports/tennis.webp'
   if (/\b(golf)\b/i.test(label)) return '/images/markets/Sports/golf.webp'

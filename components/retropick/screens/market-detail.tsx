@@ -197,7 +197,7 @@ export function MarketDetail({
       {/* Floating Non-blocking Toast Notification Banner */}
       {showSuccess && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-fade-down">
-          <div className="flex items-center gap-3 rounded-2xl border border-yes/40 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-3 rounded-2xl border border-yes/40 bg-card/98 p-3.5 shadow-2xl">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-yes/20 text-yes font-black text-sm">
               ✓
             </div>

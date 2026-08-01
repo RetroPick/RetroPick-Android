@@ -19,7 +19,7 @@ export function BottomNav({
   onChange: (t: Tab) => void
 }) {
   return (
-    <nav className="absolute inset-x-0 bottom-0 z-50 flex h-[92px] items-start justify-around border-t border-border bg-card/95 backdrop-blur-xl px-4 pt-2.5 pb-6 shadow-2xl">
+    <nav className="absolute inset-x-0 bottom-0 z-50 flex h-[92px] items-start justify-around border-t border-border bg-card/98 px-4 pt-2.5 pb-6 shadow-2xl">
       {ITEMS.map(({ id, label, icon: Icon }) => {
         const isActive = id === active
         return (

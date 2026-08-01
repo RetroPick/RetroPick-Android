@@ -110,7 +110,7 @@ export function ConnectModal({
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-[2px] animate-fade-in p-0">
+    <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/80 animate-fade-in p-0">
       {/* Backdrop overlay click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 

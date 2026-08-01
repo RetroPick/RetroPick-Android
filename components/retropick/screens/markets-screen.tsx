@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { MARKETS, type Market } from '@/lib/retropick-data'
 import { MarketCard } from '../market-card'
 import { cn } from '@/lib/utils'
@@ -30,6 +30,56 @@ const FILTERS = [
   { id: 'CONVERGENCE', label: 'Convergence', icon: Waypoints },
 ]
 
+function useSimpleVirtualizer({
+  count,
+  parentRef,
+  estimateSize = 185,
+  overscan = 4,
+}: {
+  count: number
+  parentRef: React.RefObject<HTMLDivElement | null>
+  estimateSize?: number
+  overscan?: number
+}) {
+  const [scrollTop, setScrollTop] = useState(0)
+  const [containerHeight, setContainerHeight] = useState(600)
+
+  useEffect(() => {
+    const el = parentRef.current
+    if (!el) return
+
+    const handleScroll = () => setScrollTop(el.scrollTop)
+    const handleResize = () => setContainerHeight(el.clientHeight || 600)
+
+    handleResize()
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [parentRef])
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / estimateSize) - overscan)
+  const endIndex = Math.min(count - 1, Math.ceil((scrollTop + containerHeight) / estimateSize) + overscan)
+
+  const virtualItems = []
+  for (let i = startIndex; i <= endIndex; i++) {
+    if (i >= 0 && i < count) {
+      virtualItems.push({
+        index: i,
+        start: i * estimateSize,
+      })
+    }
+  }
+
+  return {
+    getTotalSize: () => count * estimateSize,
+    getVirtualItems: () => virtualItems,
+  }
+}
+
 export function MarketsScreen({
   onOpenMarket,
   markets = MARKETS,
@@ -42,6 +92,7 @@ export function MarketsScreen({
   onClearCategory?: () => void
 }) {
   const [filter, setFilter] = useState('Trending')
+  const parentRef = useRef<HTMLDivElement>(null)
 
   const list = useMemo(() => {
     let result = [...markets]
@@ -106,10 +157,17 @@ export function MarketsScreen({
     return result
   }, [markets, selectedCategory, filter])
 
+  const rowVirtualizer = useSimpleVirtualizer({
+    count: list.length,
+    parentRef,
+    estimateSize: 185,
+    overscan: 4,
+  })
+
   return (
     <div className="animate-fade-up flex flex-col pb-36">
       <div className="space-y-3 px-4 pt-1">
-        {/* Polymarket-style Filter Tab Bar (Perfectly Centered & Subtle Borders) */}
+        {/* Polymarket-style Filter Tab Bar */}
         <div className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-2 border-b border-border/60 bg-background">
           {FILTERS.map((f) => {
             const Icon = f.icon
@@ -138,16 +196,46 @@ export function MarketsScreen({
           })}
         </div>
 
-        {/* Markets List */}
-        <div className="space-y-3 mt-1">
+        {/* Markets Virtualized List Container */}
+        <div className="mt-1">
           {list.length > 0 ? (
-            list.map((m) => (
-              <MarketCard
-                key={m.id}
-                market={m}
-                onClick={() => onOpenMarket(m)}
-              />
-            ))
+            <div
+              ref={parentRef}
+              className="max-h-[calc(100vh-210px)] overflow-y-auto no-scrollbar pr-0.5"
+            >
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const m = list[virtualRow.index]
+                  if (!m) return null
+                  return (
+                    <div
+                      key={m.id}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className="pb-3"
+                    >
+                      <MarketCard
+                        market={m}
+                        onClick={() => onOpenMarket(m)}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           ) : (
             <div className="text-center py-12 px-4 rounded-2xl border border-border/60 bg-card/50 space-y-3">
               <p className="text-xs font-bold text-foreground">

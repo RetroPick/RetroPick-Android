@@ -313,7 +313,7 @@ export function DrawerMenu({
       {/* Backdrop (Stops above BottomNav) */}
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-black/75 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
       />

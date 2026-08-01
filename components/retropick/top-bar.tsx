@@ -65,7 +65,7 @@ export function TopBar({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex flex-col w-full border-b border-border bg-card/95 backdrop-blur-md text-foreground shadow-xs">
+    <header className="sticky top-0 z-30 flex flex-col w-full border-b border-border bg-card/98 text-foreground shadow-xs">
       <div className="flex h-14 w-full items-center justify-between px-4 py-2">
         {/* Left: Sidebar toggle icon + Title */}
         <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">

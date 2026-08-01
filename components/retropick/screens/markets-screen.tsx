@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { MARKETS, type Market } from '@/lib/retropick-data'
 import { MarketCard } from '../market-card'
 import { cn } from '@/lib/utils'
@@ -14,8 +14,6 @@ import {
   Gauge,
   Calendar,
   Waypoints,
-  X,
-  Filter,
 } from 'lucide-react'
 
 const FILTERS = [
@@ -30,94 +28,6 @@ const FILTERS = [
   { id: 'CONVERGENCE', label: 'Convergence', icon: Waypoints },
 ]
 
-function getMarketCardHeight(m: Market): number {
-  if (!m) return 210
-  // Base Card Padding + Top Header + Question text + Volume/TimeFooter = ~135px
-  let height = 135
-
-  if (m.options && m.options.length > 0) {
-    // Each Option row is ~48px + 8px gap
-    const count = Math.min(m.options.length, 4)
-    height += count * 56 + 10
-  } else {
-    // Up/Down or Threshold card has 2 big buttons: ~58px
-    height += 64
-  }
-
-  return height + 14 // +14px gap between cards
-}
-
-function useSimpleVirtualizer({
-  items,
-  parentRef,
-  getItemHeight,
-  overscan = 5,
-}: {
-  items: Market[]
-  parentRef: React.RefObject<HTMLDivElement | null>
-  getItemHeight: (m: Market) => number
-  overscan?: number
-}) {
-  const [scrollTop, setScrollTop] = useState(0)
-  const [containerHeight, setContainerHeight] = useState(650)
-
-  useEffect(() => {
-    const el = parentRef.current
-    if (!el) return
-
-    const handleScroll = () => setScrollTop(el.scrollTop)
-    const handleResize = () => setContainerHeight(el.clientHeight || 650)
-
-    handleResize()
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      el.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [parentRef])
-
-  const offsets = useMemo(() => {
-    const arr = [0]
-    for (let i = 0; i < items.length; i++) {
-      arr.push(arr[i] + getItemHeight(items[i]))
-    }
-    return arr
-  }, [items, getItemHeight])
-
-  const totalSize = offsets[items.length] || 0
-
-  let startIndex = 0
-  while (startIndex < items.length && offsets[startIndex + 1] < scrollTop) {
-    startIndex++
-  }
-  startIndex = Math.max(0, startIndex - overscan)
-
-  let endIndex = startIndex
-  while (endIndex < items.length && offsets[endIndex] < scrollTop + containerHeight) {
-    endIndex++
-  }
-  endIndex = Math.min(items.length - 1, endIndex + overscan)
-
-  const virtualItems = []
-  for (let i = startIndex; i <= endIndex; i++) {
-    if (i >= 0 && i < items.length) {
-      virtualItems.push({
-        index: i,
-        key: items[i]?.id || i,
-        start: offsets[i],
-        size: offsets[i + 1] - offsets[i],
-      })
-    }
-  }
-
-  return {
-    getTotalSize: () => totalSize,
-    getVirtualItems: () => virtualItems,
-  }
-}
-
 export function MarketsScreen({
   onOpenMarket,
   markets = MARKETS,
@@ -130,7 +40,6 @@ export function MarketsScreen({
   onClearCategory?: () => void
 }) {
   const [filter, setFilter] = useState('Trending')
-  const parentRef = useRef<HTMLDivElement>(null)
 
   const list = useMemo(() => {
     let result = [...markets]
@@ -195,17 +104,6 @@ export function MarketsScreen({
     return result
   }, [markets, selectedCategory, filter])
 
-  const rowVirtualizer = useSimpleVirtualizer({
-    items: list,
-    parentRef,
-    getItemHeight: getMarketCardHeight,
-    overscan: 5,
-  })
-
-  useEffect(() => {
-    parentRef.current?.scrollTo({ top: 0 })
-  }, [filter, selectedCategory])
-
   return (
     <div className="animate-fade-up flex flex-col pb-36">
       <div className="space-y-3 px-4 pt-1">
@@ -238,46 +136,16 @@ export function MarketsScreen({
           })}
         </div>
 
-        {/* Markets Virtualized List Container */}
-        <div className="mt-1">
+        {/* Natural Markets List */}
+        <div className="space-y-3 mt-1">
           {list.length > 0 ? (
-            <div
-              ref={parentRef}
-              className="max-h-[calc(100vh-210px)] overflow-y-auto no-scrollbar pr-0.5"
-            >
-              <div
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-                  width: '100%',
-                  position: 'relative',
-                }}
-              >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const m = list[virtualRow.index]
-                  if (!m) return null
-                  return (
-                    <div
-                      key={virtualRow.key}
-                      ref={rowVirtualizer.measureElement}
-                      data-index={virtualRow.index}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        transform: `translateY(${virtualRow.start}px)`,
-                      }}
-                      className="pb-3"
-                    >
-                      <MarketCard
-                        market={m}
-                        onClick={() => onOpenMarket(m)}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            list.map((m) => (
+              <MarketCard
+                key={m.id}
+                market={m}
+                onClick={() => onOpenMarket(m)}
+              />
+            ))
           ) : (
             <div className="text-center py-12 px-4 rounded-2xl border border-border/60 bg-card/50 space-y-3">
               <p className="text-xs font-bold text-foreground">

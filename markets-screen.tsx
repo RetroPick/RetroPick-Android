@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { MARKETS, type Market } from '@/lib/retropick-data'
 import { MarketCard } from '../market-card'
 import { cn } from '@/lib/utils'
@@ -29,57 +30,6 @@ const FILTERS = [
   { id: 'DATE', label: 'Date', icon: Calendar },
   { id: 'CONVERGENCE', label: 'Convergence', icon: Waypoints },
 ]
-
-function useSimpleVirtualizer({
-  count,
-  parentRef,
-  estimateSize = 185,
-  overscan = 6,
-}: {
-  count: number
-  parentRef: React.RefObject<HTMLDivElement | null>
-  estimateSize?: number
-  overscan?: number
-}) {
-  const [scrollTop, setScrollTop] = useState(0)
-  const [containerHeight, setContainerHeight] = useState(600)
-
-  useEffect(() => {
-    const el = parentRef.current
-    if (!el) return
-
-    const handleScroll = () => setScrollTop(el.scrollTop)
-    const handleResize = () => setContainerHeight(el.clientHeight || 600)
-
-    handleResize()
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      el.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [parentRef])
-
-  const startIndex = Math.max(0, Math.floor(scrollTop / estimateSize) - overscan)
-  const endIndex = Math.min(count - 1, Math.ceil((scrollTop + containerHeight) / estimateSize) + overscan)
-
-  const virtualItems = []
-  for (let i = startIndex; i <= endIndex; i++) {
-    if (i >= 0 && i < count) {
-      virtualItems.push({
-        index: i,
-        key: i,
-        start: i * estimateSize,
-      })
-    }
-  }
-
-  return {
-    getTotalSize: () => count * estimateSize,
-    getVirtualItems: () => virtualItems,
-  }
-}
 
 export function MarketsScreen({
   onOpenMarket,
@@ -158,15 +108,25 @@ export function MarketsScreen({
     return result
   }, [markets, selectedCategory, filter])
 
-  const rowVirtualizer = useSimpleVirtualizer({
+  const rowVirtualizer = useVirtualizer({
     count: list.length,
-    parentRef,
-    estimateSize: 185,
+    getScrollElement: () => parentRef.current,
+    // Rough starting guess only — measureElement (via ResizeObserver) corrects
+    // this per-card once rendered, since MarketCard height varies a lot
+    // (options list length 0-4 rows, and the expandable chart/details drawer).
+    estimateSize: () => 185,
     overscan: 6,
+    getItemKey: (index) => list[index]?.id ?? index,
   })
 
+  // Card heights are keyed by list index internally, so when the filtered
+  // list changes (different filter tab / category) we need to snap scroll
+  // back to top and force a remeasure — otherwise leftover scrollTop from
+  // the previous (possibly longer) list can point the virtualizer at a
+  // range that doesn't exist in the new list.
   useEffect(() => {
     parentRef.current?.scrollTo({ top: 0 })
+    rowVirtualizer.measure()
   }, [filter, selectedCategory])
 
   return (

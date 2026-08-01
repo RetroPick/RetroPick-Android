@@ -92,7 +92,7 @@ function MarketDetailImage({ market }: { market: Market }) {
   const isLogo = isLogoAsset(src)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-400/50 bg-gray-300 dark:bg-gray-700/80 p-0.5 shadow-sm overflow-hidden">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-300 dark:bg-slate-800 p-0.5 shadow-sm overflow-hidden">
       <div className={cn("flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden", isLogo && "p-1")}>
         <img
           src={src}

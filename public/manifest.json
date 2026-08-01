@@ -1,0 +1,22 @@
+{
+  "name": "RetroPick Android",
+  "short_name": "RetroPick",
+  "description": "RetroPick Prediction Market Mobile App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E131F",
+  "theme_color": "#0E131F",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/LOGO-BARU1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/LOGO-BARU1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

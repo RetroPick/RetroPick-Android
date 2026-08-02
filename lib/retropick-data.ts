@@ -303,7 +303,29 @@ export function resolveMarketImage(market: {
     return { url: '/images/markets/crypto/bitcoin.webp', source: ImageSource.LOCAL_CATEGORY_FALLBACK }
   }
 
-  // TIER 1: Local asset berbasis ENTITAS spesifik (Paris, Bitcoin, etc. - longest match first)
+  const isRealApiUrl = (url?: string) => {
+    if (!url || typeof url !== 'string') return false
+    if (!url.startsWith('http')) return false
+    if (url.includes('images.unsplash.com')) return false
+    if (url.includes('photo-1541872703')) return false
+    return true
+  }
+
+  // TIER 1: Real Polymarket API image/icon (icon takes priority for crisp square avatars)
+  if (isRealApiUrl(market.icon)) {
+    return { url: market.icon!, source: ImageSource.API_MARKET }
+  }
+  if (isRealApiUrl(market.image)) {
+    return { url: market.image!, source: ImageSource.API_MARKET }
+  }
+  if (isRealApiUrl(market.eventIcon)) {
+    return { url: market.eventIcon!, source: ImageSource.API_EVENT }
+  }
+  if (isRealApiUrl(market.eventImage)) {
+    return { url: market.eventImage!, source: ImageSource.API_EVENT }
+  }
+
+  // TIER 2: Local asset berbasis ENTITAS spesifik (only when API image is missing)
   const haystack = `${market.question || ''} ${market.title || ''} ${(market.slug || '').replace(/-/g, ' ')}`.toLowerCase()
 
   const matchedEntities = Object.keys(ENTITY_ASSET_MAP)
@@ -318,31 +340,7 @@ export function resolveMarketImage(market: {
     return { url: ENTITY_ASSET_MAP[bestMatch], source: ImageSource.LOCAL_ENTITY }
   }
 
-  const isRealApiUrl = (url?: string) => {
-    if (!url || typeof url !== 'string') return false
-    if (!url.startsWith('http')) return false
-    if (url.includes('images.unsplash.com')) return false
-    if (url.includes('photo-1541872703')) return false
-    return true
-  }
-
-  // TIER 2: market.icon / market.image dari Polymarket API
-  if (isRealApiUrl(market.image)) {
-    return { url: market.image!, source: ImageSource.API_MARKET }
-  }
-  if (isRealApiUrl(market.icon)) {
-    return { url: market.icon!, source: ImageSource.API_MARKET }
-  }
-
-  // TIER 3: event.image / event.icon dari Polymarket API
-  if (isRealApiUrl(market.eventImage)) {
-    return { url: market.eventImage!, source: ImageSource.API_EVENT }
-  }
-  if (isRealApiUrl(market.eventIcon)) {
-    return { url: market.eventIcon!, source: ImageSource.API_EVENT }
-  }
-
-  // TIER 4: Category Fallback
+  // TIER 3: Category Fallback
   const cat = market.category || 'Crypto'
   const fallback = CATEGORY_FALLBACK_ASSET[cat] || '/images/markets/crypto/bitcoin.webp'
   return { url: fallback, source: ImageSource.LOCAL_CATEGORY_FALLBACK }

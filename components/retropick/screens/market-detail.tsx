@@ -482,12 +482,19 @@ export function MarketDetail({
                     {(() => {
                       const imgSrc = getOptionThumbnail(opt.label, market)
                       if (!imgSrc) return null
+                      const isLogo = isLogoAsset(imgSrc)
                       return (
-                        <img
-                          src={imgSrc}
-                          alt={opt.label}
-                          className="h-7 w-7 rounded-lg object-cover shrink-0 border border-border/60 shadow-2xs"
-                        />
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white overflow-hidden border border-border/60 shadow-2xs">
+                          <img
+                            src={imgSrc}
+                            alt={opt.label}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null
+                              e.currentTarget.src = '/logo.webp'
+                            }}
+                            className={cn("h-full w-full", isLogo ? "object-contain p-0.5" : "object-cover")}
+                          />
+                        </div>
                       )
                     })()}
                     <span className="truncate">{opt.label}</span>

@@ -252,16 +252,19 @@ export function MarketCard({
                   {(() => {
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
+                    const isLogo = isLogoAsset(imgSrc)
                     return (
-                      <img
-                        src={imgSrc}
-                        alt={opt.label}
-                        onError={(e) => {
-                          e.currentTarget.onerror = null
-                          e.currentTarget.src = '/logo.webp'
-                        }}
-                        className="h-7 w-7 shrink-0 rounded-md object-cover group-hover:scale-105 transition-transform"
-                      />
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white overflow-hidden group-hover:scale-105 transition-transform">
+                        <img
+                          src={imgSrc}
+                          alt={opt.label}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = '/logo.webp'
+                          }}
+                          className={cn("h-full w-full", isLogo ? "object-contain p-0.5" : "object-cover")}
+                        />
+                      </div>
                     )
                   })()}
                   <span className="font-bold text-foreground">{opt.label}</span>

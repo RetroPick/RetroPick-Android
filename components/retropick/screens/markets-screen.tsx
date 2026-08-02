@@ -136,7 +136,7 @@ export function MarketsScreen({
           })}
         </div>
 
-        {/* Natural Markets List */}
+        {/* Natural Flow Markets List */}
         <div className="space-y-3 mt-1">
           {list.length > 0 ? (
             list.map((m) => (

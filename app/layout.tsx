@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Sora, Inter } from 'next/font/google'
 import './globals.css'
@@ -6,11 +5,13 @@ import './globals.css'
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
 })
 
 const sora = Sora({
   subsets: ['latin'],
   variable: '--font-display',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -48,7 +49,6 @@ export default function RootLayout({
     <html lang="en" className={`dark ${inter.variable} ${sora.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )

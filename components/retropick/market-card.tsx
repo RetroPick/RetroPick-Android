@@ -104,31 +104,9 @@ function BrandIcon({ name }: { name: string }) {
 function isLogoAsset(url: string): boolean {
   if (!url) return false
   const lower = url.toLowerCase()
-  
-  // Full scenic photos & full cover assets
-  if (
-    lower.includes('paris.webp') ||
-    lower.includes('bitcoin.webp') ||
-    lower.includes('climate.webp') ||
-    lower.includes('green_energy.webp') ||
-    lower.includes('stock.webp') ||
-    lower.includes('fed.webp') ||
-    lower.includes('photo-15') ||
-    lower.includes('unsplash.com')
-  ) {
-    return false
-  }
-
-  // If it's an SVG or contains logo/icon/badge, or is a Polymarket API uploaded icon
-  if (
-    lower.endsWith('.svg') ||
-    lower.includes('logo') ||
-    lower.includes('icon') ||
-    lower.includes('polymarket-upload')
-  ) {
+  if (lower.endsWith('.svg') || lower.includes('/logo') || lower.includes('logo.')) {
     return true
   }
-
   return false
 }
 
@@ -137,18 +115,19 @@ function MarketThumbnail({ market }: { market: Market }) {
   const isLogo = isLogoAsset(imgSrc)
 
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-300 dark:bg-slate-800 p-0.5 shadow-sm overflow-hidden">
-      <div className={cn("flex h-full w-full items-center justify-center rounded-lg bg-white overflow-hidden", isLogo && "p-1")}>
-        <img
-          src={imgSrc}
-          alt=""
-          onError={(e) => {
-            e.currentTarget.onerror = null
-            e.currentTarget.src = '/logo.webp'
-          }}
-          className={cn("h-full w-full", isLogo ? "object-contain" : "object-cover")}
-        />
-      </div>
+    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300/80 dark:border-zinc-700/60 bg-slate-200/90 dark:bg-zinc-800 p-0.5 shadow-2xs overflow-hidden">
+      <img
+        src={imgSrc}
+        alt=""
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = '/logo.webp'
+        }}
+        className={cn(
+          "h-full w-full rounded-lg bg-white overflow-hidden",
+          isLogo ? "object-contain p-1" : "object-cover"
+        )}
+      />
     </div>
   )
 }

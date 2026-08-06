@@ -84,7 +84,7 @@ function getSubCategoryIcon(subValue: string, markets: Market[]): string {
     return '/images/markets/finance/nvidia.webp'
   }
   if (subLower.includes('apple')) {
-    return '/images/markets/finance/apple.webp'
+    return '/apple.webp'
   }
   if (subLower.includes('stock') || subLower.includes('asset') || subLower.includes('index')) {
     return '/images/markets/finance/stock.webp'
@@ -273,9 +273,12 @@ export function DrawerMenu({
 }) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [activeLegal, setActiveLegal] = useState<{ title: string; body: string } | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Dynamically filter sub-categories so only sub-tags with ACTUAL active markets appear
   const categoriesWithLiveSubTags = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim()
+
     return CATEGORIES_CONFIG.map((c) => {
       const categoryMarkets = (markets || []).filter((m) => {
         const cat = (m.category || '').toLowerCase()
@@ -289,10 +292,10 @@ export function DrawerMenu({
         const labelLower = sub.label.toLowerCase()
 
         return categoryMarkets.some((m) => {
-          const q = m.question.toLowerCase()
+          const qText = m.question.toLowerCase()
           const tagsMatch = m.tags && m.tags.some((t) => t.toLowerCase().includes(valLower) || t.toLowerCase().includes(labelLower))
           const optionsMatch = m.options && m.options.some((o) => o.label.toLowerCase().includes(valLower))
-          return tagsMatch || optionsMatch || q.includes(valLower) || q.includes(labelLower)
+          return tagsMatch || optionsMatch || qText.includes(valLower) || qText.includes(labelLower)
         })
       })
 
@@ -300,12 +303,25 @@ export function DrawerMenu({
         ...c,
         subCategories: liveSubCategories,
       }
+    }).filter((c) => {
+      if (!q) return true
+      const catMatch = c.label.toLowerCase().includes(q) || c.categoryKey.toLowerCase().includes(q)
+      const subMatch = c.subCategories.some((s) => s.label.toLowerCase().includes(q) || s.value.toLowerCase().includes(q))
+      return catMatch || subMatch
     })
-  }, [markets])
+  }, [markets, searchQuery])
 
   const toggleExpand = (e: React.MouseEvent, label: string) => {
     e.stopPropagation()
     setExpandedCategory(expandedCategory === label ? null : label)
+  }
+
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      onSelectCategory?.(searchQuery.trim())
+      onClose()
+      setSearchQuery('')
+    }
   }
 
   return (
@@ -332,7 +348,13 @@ export function DrawerMenu({
               RetroPick
             </span>
           </div>
-          <SearchBar placeholder="Search markets..." />
+          <SearchBar
+            placeholder="Search markets..."
+            value={searchQuery}
+            onChange={(v) => setSearchQuery(v)}
+            onClear={() => setSearchQuery('')}
+            onSubmit={handleSearchSubmit}
+          />
         </div>
 
         {/* Scrollable Items */}
@@ -352,7 +374,7 @@ export function DrawerMenu({
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-foreground/90 hover:bg-secondary/40 hover:text-foreground transition-all cursor-pointer"
             >
               <Briefcase className="h-4.5 w-4.5 text-foreground/90 stroke-[2px] shrink-0" />
-              <span>Portfolio & Activity</span>
+              <span>Portfolio</span>
             </button>
           </div>
 
@@ -361,6 +383,17 @@ export function DrawerMenu({
             <p className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
               Categories
             </p>
+
+            {searchQuery.trim() && (
+              <button
+                type="button"
+                onClick={handleSearchSubmit}
+                className="flex w-full items-center justify-between rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer mb-2"
+              >
+                <span className="truncate">Search for "{searchQuery}"</span>
+                <ChevronRight className="h-4 w-4 shrink-0 stroke-[2.5px]" />
+              </button>
+            )}
             {categoriesWithLiveSubTags.map((c) => {
               const isExpanded = expandedCategory === c.label
               const hasSubCategories = c.subCategories && c.subCategories.length > 0

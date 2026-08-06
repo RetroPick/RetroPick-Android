@@ -190,7 +190,9 @@ export function extractSubTags(
       specificSubTag = 'NBA'
     } else if (/\b(ufc|mma)\b/i.test(q)) {
       specificSubTag = 'MMA / UFC'
-    } else if (/\b(nfl|eagles|chiefs|patriots|cowboys|packers|49ers|super bowl|touchdown|yards)\b/i.test(q)) {
+    } else if (/\b(nrl|rugby|queensland cowboys|sydney roosters|broncos|storm|panthers|parramatta)\b/i.test(q)) {
+      specificSubTag = 'Rugby'
+    } else if (/\b(nfl|super bowl|dallas cowboys|kansas city chiefs|eagles|patriots|packers|49ers|touchdown|quarterback|nfl draft)\b/i.test(q)) {
       specificSubTag = 'NFL'
     } else if (/\b(soccer|football|epl|premier league|champions league|real madrid|barcelona|arsenal|chelsea|manchester|bayern|psg|fc|cd|ballon d'or|ballon dor|haaland|messi|ronaldo|mbappe)\b/i.test(q)) {
       specificSubTag = 'Soccer'

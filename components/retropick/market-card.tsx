@@ -8,6 +8,8 @@ import {
   Check,
   Calendar,
   MoreHorizontal,
+  Info,
+  TrendingUp,
 } from 'lucide-react'
 import { type Market, getSafeMarketImage, getOptionThumbnail } from '@/lib/retropick-data'
 import { extractSubTags } from '@/lib/polymarket-service'
@@ -101,10 +103,19 @@ function BrandIcon({ name }: { name: string }) {
   )
 }
 
-function isLogoAsset(url: string): boolean {
+function isTransparentLogoAsset(url: string): boolean {
   if (!url) return false
   const lower = url.toLowerCase()
-  if (lower.endsWith('.svg') || lower.includes('/logo') || lower.includes('logo.')) {
+  if (lower.endsWith('.svg')) return true
+  if (
+    lower.includes('apple') ||
+    lower.includes('google') ||
+    lower.includes('twitter') ||
+    lower.includes('telegram') ||
+    lower.includes('metamask') ||
+    lower.includes('prvaliga') ||
+    lower.includes('soccer')
+  ) {
     return true
   }
   return false
@@ -112,20 +123,21 @@ function isLogoAsset(url: string): boolean {
 
 function MarketThumbnail({ market }: { market: Market }) {
   const imgSrc = getSafeMarketImage(market)
-  const isLogo = isLogoAsset(imgSrc)
+  const isTransparent = isTransparentLogoAsset(imgSrc)
 
   return (
-    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300/80 dark:border-zinc-700/60 bg-slate-200/90 dark:bg-zinc-800 p-0.5 shadow-2xs overflow-hidden">
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-400/40 dark:border-zinc-600/60 bg-slate-300/80 dark:bg-zinc-700/90 p-1 shadow-2xs group-hover:scale-105 transition-all">
       <img
         src={imgSrc}
         alt=""
+        suppressHydrationWarning
         onError={(e) => {
           e.currentTarget.onerror = null
           e.currentTarget.src = '/logo.webp'
         }}
         className={cn(
-          "h-full w-full rounded-lg bg-white overflow-hidden",
-          isLogo ? "object-contain p-1" : "object-cover"
+          "h-full w-full rounded-lg transition-transform",
+          isTransparent ? "bg-white object-contain p-0.5" : "object-cover"
         )}
       />
     </div>
@@ -133,12 +145,16 @@ function MarketThumbnail({ market }: { market: Market }) {
 }
 
 function getMarketDescription(market: Market): string {
-  if (market.description) return market.description
-  
-  if (market.marketType === 'UP_OR_DOWN') {
-    return `This directional prediction market resolves based on verified price outcome for ${market.question}. Total volume traded is ${market.volume} with ${market.participants} active traders.`
+  if (market.description && market.description.length <= 160) {
+    return market.description
   }
-  return `This market resolves according to verified outcome sources for "${market.question}". Total volume traded is ${market.volume} with ${market.timeLeft} remaining.`
+  
+  const cleanParticipants = String(market.participants || '100+').replace(/traders?/gi, '').trim()
+
+  if (market.marketType === 'UP_OR_DOWN') {
+    return `Resolves based on verified outcome sources for "${market.question}". Total volume traded is ${market.volume} with ${cleanParticipants} active traders.`
+  }
+  return `Resolves according to verified outcome sources for "${market.question}". Total volume traded is ${market.volume} with ${market.timeLeft} remaining.`
 }
 
 export function MarketCard({
@@ -252,17 +268,17 @@ export function MarketCard({
                   {(() => {
                     const imgSrc = getOptionThumbnail(opt.label, market)
                     if (!imgSrc) return null
-                    const isLogo = isLogoAsset(imgSrc)
                     return (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white overflow-hidden group-hover:scale-105 transition-transform">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md shadow-2xs group-hover:scale-105 transition-transform">
                         <img
                           src={imgSrc}
                           alt={opt.label}
+                          suppressHydrationWarning
                           onError={(e) => {
                             e.currentTarget.onerror = null
                             e.currentTarget.src = '/logo.webp'
                           }}
-                          className={cn("h-full w-full", isLogo ? "object-contain p-0.5" : "object-cover")}
+                          className="h-full w-full rounded-md object-cover"
                         />
                       </div>
                     )
@@ -341,27 +357,57 @@ export function MarketCard({
         </button>
       </div>
 
-      {/* Compact Interactive Mini Chart & Details Drawer */}
+      {/* Compact Clean Mini Chart & Details Drawer */}
       {showChart && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="mt-2.5 overflow-hidden rounded-xl border border-border/60 bg-secondary/15 p-3 transition-all animate-in fade-in slide-in-from-top-2 duration-200"
+          className="mt-2.5 overflow-hidden rounded-xl border border-border/60 bg-secondary/15 p-3.5 space-y-2.5 transition-all animate-in fade-in slide-in-from-top-2 duration-200"
         >
-          <div className="flex items-center justify-between mb-1.5 px-0.5">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">24H Price Trend</span>
-            <span className={cn("text-[11px] font-bold font-mono px-1.5 py-0.5 rounded border", up ? "bg-yes/20 text-yes border-yes/30" : "bg-no/20 text-no border-no/30")}>
-              {up ? '↑' : '↓'} {market.yes}%
+          {/* Trend Header */}
+          <div className="flex items-center justify-between px-0.5">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              <TrendingUp className="h-3.5 w-3.5 text-primary stroke-[2px]" />
+              24H Price Trend
+            </span>
+            <span className={cn(
+              "text-[11px] font-bold font-mono px-2 py-0.5 rounded-md border",
+              up ? "bg-yes/20 text-yes border-yes/30" : "bg-no/20 text-no border-no/30"
+            )}>
+              {up ? '↑ +' : '↓ -'}{market.yes}% (24H)
             </span>
           </div>
 
-          <div className="h-[50px] w-full flex items-center justify-center pt-0.5">
-            <MiniChart data={market.chart} up={up} width={320} height={45} className="w-full h-full" strokeWidth={2} />
+          {/* Clean Chart Area with Y-Axis Percentage Numbers */}
+          <div className="flex items-center gap-2 pt-0.5">
+            <div className="h-[52px] flex-1">
+              <MiniChart data={market.chart} up={up} width={300} height={50} className="w-full h-full" strokeWidth={2} />
+            </div>
+            {/* Y-Axis Price Numbers */}
+            <div className="flex flex-col justify-between h-[48px] text-[9px] font-bold font-mono text-muted-foreground/80 shrink-0 text-right pr-0.5">
+              <span>40%</span>
+              <span>25%</span>
+              <span>10%</span>
+            </div>
           </div>
 
-          {/* Market Description */}
-          <div className="mt-2.5 pt-2 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground/90">
-            <span className="font-bold text-foreground/80 block mb-0.5">Market Overview</span>
-            <p>{getMarketDescription(market)}</p>
+          {/* X-Axis Time Labels */}
+          <div className="flex justify-between text-[9px] font-bold font-mono text-muted-foreground/70 px-1 pb-0.5">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>23:59</span>
+          </div>
+
+          {/* Clear Divider Line & Description Section Header */}
+          <div className="pt-2.5 border-t border-border/60 space-y-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+              <Info className="h-3.5 w-3.5 text-primary stroke-[2px]" />
+              <span>Market Overview</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground/90 font-medium">
+              {getMarketDescription(market)}
+            </p>
           </div>
         </div>
       )}

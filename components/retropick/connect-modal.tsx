@@ -143,8 +143,8 @@ export function ConnectModal({
               className="flex w-full items-center justify-between rounded-xl border border-border/80 bg-secondary/30 p-3 hover:bg-secondary/60 active:scale-[0.99] transition-all cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs">
-                  <GoogleLogo className="h-5 w-5" />
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs overflow-hidden">
+                  <img src="/google.webp" alt="Google" className="h-full w-full object-cover rounded-xl" />
                 </span>
                 <span className="text-xs font-bold text-foreground">Google</span>
               </div>
@@ -186,7 +186,7 @@ export function ConnectModal({
             >
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs overflow-hidden">
-                  <img src="/X-logo.png" alt="X" className="h-full w-full object-cover rounded-xl" />
+                  <img src="/twitter.webp" alt="Twitter" className="h-full w-full object-cover rounded-xl" />
                 </span>
                 <span className="text-xs font-bold text-foreground">Twitter</span>
               </div>
@@ -200,7 +200,7 @@ export function ConnectModal({
             >
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs overflow-hidden">
-                  <img src="/apple-logo.png" alt="Apple" className="h-full w-full object-contain p-0.5 scale-150" />
+                  <img src="/apple.webp" alt="Apple" className="h-full w-full object-cover rounded-xl" />
                 </span>
                 <span className="text-xs font-bold text-foreground">Apple</span>
               </div>
@@ -214,7 +214,7 @@ export function ConnectModal({
             >
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-card border border-border/60 shrink-0 shadow-xs overflow-hidden">
-                  <img src="/telegram-logo.png" alt="Telegram" className="h-full w-full object-cover rounded-xl" />
+                  <img src="/telegram.webp" alt="Telegram" className="h-full w-full object-cover rounded-xl" />
                 </span>
                 <span className="text-xs font-bold text-foreground">Telegram</span>
               </div>

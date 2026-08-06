@@ -58,10 +58,19 @@ function getResolutionDomain(market: Market): string {
   return 'polymarket.com'
 }
 
-function isLogoAsset(url: string): boolean {
+function isTransparentLogoAsset(url: string): boolean {
   if (!url) return false
   const lower = url.toLowerCase()
-  if (lower.endsWith('.svg') || lower.includes('/logo') || lower.includes('logo.')) {
+  if (lower.endsWith('.svg')) return true
+  if (
+    lower.includes('apple') ||
+    lower.includes('google') ||
+    lower.includes('twitter') ||
+    lower.includes('telegram') ||
+    lower.includes('metamask') ||
+    lower.includes('prvaliga') ||
+    lower.includes('soccer')
+  ) {
     return true
   }
   return false
@@ -69,20 +78,21 @@ function isLogoAsset(url: string): boolean {
 
 function MarketDetailImage({ market }: { market: Market }) {
   const src = getSafeMarketImage(market)
-  const isLogo = isLogoAsset(src)
+  const isTransparent = isTransparentLogoAsset(src)
 
   return (
-    <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300/80 dark:border-zinc-700/60 bg-slate-200/90 dark:bg-zinc-800 p-0.5 shadow-2xs overflow-hidden">
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-400/40 dark:border-zinc-600/60 bg-slate-300/80 dark:bg-zinc-700/90 p-1 shadow-2xs">
       <img
         src={src}
         alt=""
+        suppressHydrationWarning
         onError={(e) => {
           e.currentTarget.onerror = null
           e.currentTarget.src = '/logo.webp'
         }}
         className={cn(
-          "h-full w-full rounded-lg bg-white overflow-hidden",
-          isLogo ? "object-contain p-1" : "object-cover"
+          "h-full w-full rounded-lg transition-transform",
+          isTransparent ? "bg-white object-contain p-0.5" : "object-cover"
         )}
       />
     </div>
@@ -482,17 +492,17 @@ export function MarketDetail({
                     {(() => {
                       const imgSrc = getOptionThumbnail(opt.label, market)
                       if (!imgSrc) return null
-                      const isLogo = isLogoAsset(imgSrc)
                       return (
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white overflow-hidden border border-border/60 shadow-2xs">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md overflow-hidden shadow-2xs">
                           <img
                             src={imgSrc}
                             alt={opt.label}
+                            suppressHydrationWarning
                             onError={(e) => {
                               e.currentTarget.onerror = null
                               e.currentTarget.src = '/logo.webp'
                             }}
-                            className={cn("h-full w-full", isLogo ? "object-contain p-0.5" : "object-cover")}
+                            className="h-full w-full rounded-md object-cover"
                           />
                         </div>
                       )

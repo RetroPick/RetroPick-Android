@@ -209,7 +209,12 @@ const ENTITY_ASSET_MAP: Record<string, string> = {
   // Finance Entities
   'nvidia': '/images/markets/finance/nvidia.webp',
   'nvda': '/images/markets/finance/nvidia.webp',
-  'apple': '/images/markets/finance/apple.webp',
+  'apple': '/apple.webp',
+  'aapl': '/apple.webp',
+  'iphone': '/apple.webp',
+  'google': '/google.webp',
+  'twitter': '/twitter.webp',
+  'telegram': '/telegram.webp',
   'microsoft': '/images/markets/finance/microsoft.webp',
   'amazon': '/images/markets/finance/amazon.webp',
   'meta': '/images/markets/finance/meta.webp',
@@ -418,14 +423,14 @@ export function getOptionThumbnail(optLabel: string, market?: { category?: strin
   }
 
   // 5. Smartphones & Electronics
-  if (/\b(apple|iphone)\b/i.test(label)) {
-    return '/images/markets/finance/apple_black.webp'
+  if (/\b(apple|iphone|aapl)\b/i.test(label)) {
+    return '/apple.webp'
   }
   if (/\b(samsung|galaxy)\b/i.test(label)) {
     return '/images/markets/finance/samsung.webp'
   }
-  if (/\b(pixel|google pixel)\b/i.test(label)) {
-    return '/images/markets/finance/google.webp'
+  if (/\b(pixel|google pixel|google)\b/i.test(label)) {
+    return '/google.webp'
   }
   if (/\b(motorola|lenovo)\b/i.test(label)) {
     return '/images/markets/finance/motorola.webp'

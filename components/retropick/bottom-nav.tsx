@@ -1,13 +1,14 @@
 'use client'
 
-import { Compass, BarChart3, Briefcase } from 'lucide-react'
+import { Compass, BarChart3, Briefcase, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type Tab = 'explore' | 'markets' | 'portfolio'
+export type Tab = 'explore' | 'markets' | 'intelligence' | 'portfolio'
 
 const ITEMS: { id: Tab; label: string; icon: typeof Compass }[] = [
   { id: 'explore', label: 'Explore', icon: Compass },
   { id: 'markets', label: 'Markets', icon: BarChart3 },
+  { id: 'intelligence', label: 'Intelligence', icon: Zap },
   { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
 ]
 

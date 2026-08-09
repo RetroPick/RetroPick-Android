@@ -18,6 +18,7 @@ import { MarketsScreen } from './screens/markets-screen'
 import { MarketDetail } from './screens/market-detail'
 import { ExploreScreen } from './screens/explore-screen'
 import { PortfolioScreen } from './screens/portfolio-screen'
+import { IntelligenceScreen } from './screens/intelligence-screen'
 import { SplashScreen } from './screens/splash-screen'
 
 import { fetchLivePolymarketMarkets, classifyMarketCategory, extractSubTags } from '@/lib/polymarket-service'
@@ -26,6 +27,7 @@ import { StorageService } from '@/lib/storage-service'
 const TITLES: Record<Tab, string> = {
   explore: 'Explore',
   markets: 'Markets',
+  intelligence: 'Intelligence',
   portfolio: 'Portfolio',
 }
 
@@ -485,6 +487,11 @@ export function AppShell() {
                           markets={markets} 
                           selectedCategory={categoryDetail}
                           onClearCategory={() => setCategoryDetail(null)}
+                        />
+                      )}
+                      {tab === 'intelligence' && (
+                        <IntelligenceScreen 
+                          onSelectMarket={openMarket}
                         />
                       )}
                       {tab === 'portfolio' && (

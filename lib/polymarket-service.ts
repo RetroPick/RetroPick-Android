@@ -87,7 +87,9 @@ const KEYWORD_MAP: Record<MarketCategoryEnum, string[]> = {
   Climate: [
     'global warming', 'co2 emissions', 'sea level', 'solar power',
     'wind energy', 'renewable energy', 'climate change', 'carbon', 'climate', 'green energy'
-  ]
+  ],
+  Science: ['space', 'physics', 'biology', 'medicine'],
+  Stocks: ['shares', 'equity', 'nasdaq', 'nyse']
 }
 
 export function classifyMarketCategory(
@@ -107,6 +109,8 @@ export function classifyMarketCategory(
     Economics: 0,
     Tech: 0,
     Finance: 0,
+    Science: 0,
+    Stocks: 0,
   }
 
   // Check Head to head or score pattern for sports booster (+5 pts)

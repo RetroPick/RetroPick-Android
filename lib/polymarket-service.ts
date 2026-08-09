@@ -31,7 +31,10 @@ const BANNED_KEYWORDS = [
   'government',
 ]
 
-export type MarketCategoryEnum = Market['category']
+export type MarketCategoryEnum = Exclude<
+  Market['category'],
+  'Science' | 'Stocks'
+>
 
 const PRIORITY_ORDER: MarketCategoryEnum[] = [
   'Sports',

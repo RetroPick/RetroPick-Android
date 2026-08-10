@@ -520,6 +520,11 @@ export function AppShell() {
                     setTab(t)
                     setDetail(null)
                     setCategoryDetail(null)
+                    setTrade(null)
+                    setShowConnectModal(false)
+                    setShowAddFundsModal(false)
+                    setShowAlertsDrawer(false)
+                    setDrawer(false)
                   }} 
                 />
               )}

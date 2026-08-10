@@ -56,12 +56,12 @@ export function WithdrawModal({
   }
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-[2px] p-2 pb-0 animate-fade-in">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-[2px] p-0 animate-fade-in">
       {/* Backdrop */}
       <div className="absolute inset-0" onClick={handleClose} />
 
-      {/* Bottom Sheet Drawer Container sitting above BottomNav */}
-      <div className="relative z-10 w-full max-w-[420px] mb-[92px] rounded-3xl border border-border/80 bg-card p-5 pb-6 shadow-2xl space-y-4 max-h-[calc(85vh-92px)] overflow-y-auto animate-slide-up">
+      {/* Full-width edge-to-edge Bottom Sheet Drawer Container sitting flush on top of BottomNav */}
+      <div className="relative z-10 w-full mb-[92px] rounded-t-3xl rounded-b-none border-t border-border/80 bg-card p-5 pb-6 shadow-2xl space-y-4 max-h-[calc(85vh-92px)] overflow-y-auto animate-slide-up">
         {/* Grab Handle Pill */}
         <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto -mt-1 mb-1 cursor-pointer" onClick={handleClose} />
 

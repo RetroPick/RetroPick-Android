@@ -110,12 +110,12 @@ export function ConnectModal({
   }
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-[2px] animate-fade-in p-2 pb-0">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-[2px] animate-fade-in p-0">
       {/* Backdrop overlay click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Slide up dialog container sitting above BottomNav */}
-      <div className="relative z-10 w-full max-w-[420px] mb-[92px] rounded-3xl border border-border/80 bg-card text-foreground p-5 pb-6 shadow-2xl animate-slide-up flex flex-col space-y-4 max-h-[calc(85vh-92px)] overflow-y-auto">
+      {/* Full-width edge-to-edge Slide up dialog container sitting flush on top of BottomNav */}
+      <div className="relative z-10 w-full mb-[92px] rounded-t-3xl rounded-b-none border-t border-border/80 bg-card text-foreground p-5 pb-6 shadow-2xl animate-slide-up flex flex-col space-y-4 max-h-[calc(85vh-92px)] overflow-y-auto">
         
         {/* Grab Handle Pill */}
         <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto -mt-1 mb-1 cursor-pointer" onClick={onClose} />

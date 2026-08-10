@@ -91,13 +91,16 @@ export function LimitOrderModal({
   }
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-fade-in">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-[2px] animate-fade-in">
       {/* Backdrop overlay click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Center modal card container inside Android phone frame */}
-      <div className="relative z-10 w-full max-w-[350px] bg-[#121722] text-white rounded-2xl border border-slate-800/90 shadow-2xl overflow-hidden font-sans my-auto max-h-[82%] overflow-y-auto animate-in zoom-in-95 duration-200">
+      {/* Bottom Sheet Drawer container - slides up from bottom, backdrop lets chart/background remain visible */}
+      <div className="relative z-10 w-full max-w-[420px] bg-[#121722]/95 backdrop-blur-md text-white rounded-t-3xl border-t border-slate-700/80 shadow-2xl overflow-hidden font-sans max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 ease-out">
         
+        {/* Grab Handle Pill */}
+        <div className="w-12 h-1 bg-slate-600/60 rounded-full mx-auto mt-2.5 mb-1 cursor-pointer" onClick={onClose} />
+
         {/* Header with Close */}
         <div className="p-4 border-b border-slate-800/60 flex items-start gap-3 relative">
           <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 shrink-0 border border-slate-700/50">

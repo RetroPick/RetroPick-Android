@@ -276,28 +276,6 @@ export function IntelligenceScreen({
   return (
     <div className="relative flex flex-col h-full bg-background animate-fade-up px-4 pb-32 pt-3 space-y-4 text-foreground overflow-y-auto min-h-0 no-scrollbar">
       
-      {/* Top Header Bar with Search & Profile Shortcut */}
-      <div className="flex items-center justify-between pt-1 pb-1">
-        <h1 className="text-lg font-extrabold text-foreground tracking-tight flex items-center gap-2">
-          <Zap className="w-5 h-5 text-indigo-400 fill-indigo-400/20" /> Intelligence
-        </h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('search')}
-            className="p-2 rounded-xl bg-secondary/40 border border-border/60 text-muted-foreground hover:text-foreground transition cursor-pointer"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setShowWhaleAlertsSettings(true)}
-            className="p-2 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-indigo-400 hover:text-indigo-300 transition cursor-pointer relative"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
-          </button>
-        </div>
-      </div>
-
       {/* 4 Primary Navigation Tabs: Whales | Smart Money | Following | Paper */}
       <div className="grid grid-cols-4 gap-1 p-1 bg-secondary/30 rounded-xl border border-border/60">
         <button

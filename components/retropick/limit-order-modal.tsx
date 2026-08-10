@@ -91,12 +91,12 @@ export function LimitOrderModal({
   }
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-[2px] animate-fade-in">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-[2px] animate-fade-in p-2 pb-0">
       {/* Backdrop overlay click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Bottom Sheet Drawer container - slides up from bottom, backdrop lets chart/background remain visible */}
-      <div className="relative z-10 w-full max-w-[420px] bg-[#121722]/95 backdrop-blur-md text-white rounded-t-3xl border-t border-slate-700/80 shadow-2xl overflow-hidden font-sans max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300 ease-out">
+      {/* Bottom Sheet Drawer container - slides up from bottom above BottomNav, backdrop lets chart/background remain visible */}
+      <div className="relative z-10 w-full max-w-[420px] mb-[92px] bg-[#121722]/95 backdrop-blur-md text-white rounded-3xl border border-slate-700/80 shadow-2xl overflow-hidden font-sans max-h-[calc(85vh-92px)] overflow-y-auto animate-in slide-in-from-bottom duration-300 ease-out">
         
         {/* Grab Handle Pill */}
         <div className="w-12 h-1 bg-slate-600/60 rounded-full mx-auto mt-2.5 mb-1 cursor-pointer" onClick={onClose} />

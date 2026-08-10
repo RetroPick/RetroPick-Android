@@ -88,7 +88,7 @@ export function AddFundsModal({
   }
 
   return (
-    <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/85 p-0 animate-fade-in">
+    <div className="absolute inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-[2px] p-2 pb-0 animate-fade-in">
       {/* Click outside to close (disabled in processing state) */}
       <div 
         className="absolute inset-0" 
@@ -99,8 +99,13 @@ export function AddFundsModal({
         }} 
       />
 
-      {/* Slide up dialog container */}
-      <div className="relative z-10 w-full rounded-t-[28px] border-t border-border bg-card p-6 shadow-2xl animate-slide-up flex flex-col max-h-[85%]">
+      {/* Slide up dialog container sitting above BottomNav */}
+      <div className="relative z-10 w-full max-w-[420px] mb-[92px] rounded-3xl border border-border bg-card p-5 pb-6 shadow-2xl animate-slide-up flex flex-col max-h-[calc(85vh-92px)] overflow-y-auto">
+        
+        {/* Grab Handle Pill */}
+        <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto -mt-1 mb-2.5 cursor-pointer" onClick={() => {
+          if (paymentStatus !== 'processing' && depositStatus !== 'processing') onClose()
+        }} />
         
         {/* CLOSE BUTTON */}
         {(paymentStatus !== 'processing' && depositStatus !== 'processing') && (

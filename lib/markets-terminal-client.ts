@@ -45,6 +45,8 @@ export interface DataProvenance {
   staleSeconds: number
 }
 
+const BFF_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+
 class MarketsTerminalClient {
   private capabilitiesCache: CapabilitiesResponse | null = null
   private eligibilityCache: EligibilityResponse | null = null
@@ -66,6 +68,29 @@ class MarketsTerminalClient {
     }
   }
 
+  public async fetchCapabilitiesFromBff(): Promise<CapabilitiesResponse> {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 1500)
+      const res = await fetch(`${BFF_API_URL}/markets/capabilities`, { signal: controller.signal })
+      clearTimeout(timeoutId)
+      if (res.ok) {
+        const data = await res.json()
+        this.capabilitiesCache = {
+          features: {
+            realtime: data.features?.orderbook_read ?? true,
+            trading: data.trading ?? true,
+            intelligence: data.intelligence ?? true,
+          },
+          version: data.version || 'v1.3.0-go-bff',
+          environment: data.source || 'production-bff',
+        }
+        return this.capabilitiesCache
+      }
+    } catch (_) {}
+    return this.getCapabilities()
+  }
+
   public getCapabilities(): CapabilitiesResponse {
     if (!this.capabilitiesCache) {
       this.capabilitiesCache = {
@@ -74,11 +99,30 @@ class MarketsTerminalClient {
           trading: true,
           intelligence: true,
         },
-        version: 'v1.2.0-phase1.2',
+        version: 'v1.3.0-bff',
         environment: 'production-bff',
       }
     }
     return this.capabilitiesCache
+  }
+
+  public async fetchEligibilityFromBff(): Promise<EligibilityResponse> {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 1500)
+      const res = await fetch(`${BFF_API_URL}/markets/eligibility`, { signal: controller.signal })
+      clearTimeout(timeoutId)
+      if (res.ok) {
+        const data = await res.json()
+        this.eligibilityCache = {
+          eligible: data.eligible ?? true,
+          jurisdiction: data.jurisdiction || 'ALLOWED_NON_RESTRICTED',
+          reason: data.reason,
+        }
+        return this.eligibilityCache
+      }
+    } catch (_) {}
+    return this.getEligibility()
   }
 
   public getEligibility(): EligibilityResponse {
@@ -91,16 +135,16 @@ class MarketsTerminalClient {
     return this.eligibilityCache
   }
 
-  public getMarketProvenance(marketId: string): DataProvenance {
+  public getMarketProvenance(marketId: string, fromBff: boolean = false): DataProvenance {
     const hashSeed = Math.abs(
       marketId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
     ).toString(16)
 
     return {
       marketId,
-      source: 'Polymarket CLOB V2',
+      source: fromBff ? 'Go BFF Projection' : 'Polymarket CLOB V2',
       freshnessState: 'fresh',
-      etag: `W/"${hashSeed}-p12-v110"`,
+      etag: `W/"${hashSeed}-p12-v130"`,
       requestId: `req-${Math.random().toString(36).substring(2, 9)}`,
       observedAt: new Date().toISOString(),
       staleSeconds: 0,

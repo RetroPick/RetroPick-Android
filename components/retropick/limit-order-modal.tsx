@@ -8,13 +8,13 @@ interface LimitOrderModalProps {
   onClose: () => void
   marketTitle?: string
   imageUrl?: string
-  initialOutcome?: "YES" | "NO"
+  initialOutcome?: string
   initialSide?: "BUY" | "SELL"
   initialPriceCents?: number
   onTradeSubmit?: (tradeDetails: {
     side: "BUY" | "SELL"
     type: "LIMIT" | "MARKET"
-    outcome: "YES" | "NO"
+    outcome: string
     limitPriceCents: number
     shares: number
     totalCost: number
@@ -34,10 +34,19 @@ export function LimitOrderModal({
 }: LimitOrderModalProps) {
   const [side, setSide] = useState<"BUY" | "SELL">(initialSide)
   const [orderType, setOrderType] = useState<"LIMIT" | "MARKET">("LIMIT")
-  const [outcome, setOutcome] = useState<"YES" | "NO">(initialOutcome)
+  const [outcome, setOutcome] = useState<string>(initialOutcome)
   const [limitPriceCents, setLimitPriceCents] = useState<number>(initialPriceCents)
   const [shares, setShares] = useState<number>(300)
   const [expiration, setExpiration] = useState<string>("Never")
+
+  // Sync state when props change
+  React.useEffect(() => {
+    setOutcome(initialOutcome)
+  }, [initialOutcome])
+
+  React.useEffect(() => {
+    if (initialPriceCents) setLimitPriceCents(initialPriceCents)
+  }, [initialPriceCents])
 
   // Prevent background scrolling when modal is open
   React.useEffect(() => {

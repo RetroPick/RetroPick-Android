@@ -47,7 +47,7 @@ export function AppShell() {
   }, [])
   // State initialized with Local Storage Persistence (STATE_DATA_OFFLINE_AND_REALTIME.md)
   const [balance, setBalance] = useState<number>(() => StorageService.loadBalance(1240.50))
-  const [trade, setTrade] = useState<{ market: Market; side: 'yes' | 'no' } | null>(null)
+  const [trade, setTrade] = useState<{ market: Market; side: 'yes' | 'no'; optionLabel?: string; optionPrice?: number } | null>(null)
 
   // Auth & Wallet States
   const [authenticated, setAuthenticated] = useState<boolean>(() => StorageService.loadAuth().authenticated)

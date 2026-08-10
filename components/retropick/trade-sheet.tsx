@@ -67,8 +67,10 @@ export function TradeSheet({
     }, 600)
   }
 
-  const initialOutcome = side === 'yes' ? 'YES' : 'NO'
-  const initialPrice = side === 'yes' ? market.yes : 100 - market.yes
+  const hasOptions = market.options && market.options.length > 0
+  const firstOpt = hasOptions ? market.options![0] : null
+  const initialOutcome = hasOptions ? firstOpt!.label : (side === 'yes' ? 'YES' : 'NO')
+  const initialPrice = hasOptions ? firstOpt!.percentage : (side === 'yes' ? market.yes : 100 - market.yes)
 
   return (
     <LimitOrderModal
@@ -81,7 +83,7 @@ export function TradeSheet({
       initialPriceCents={initialPrice}
       onTradeSubmit={(tradeDetails) => {
         onExecuteTrade?.(
-          tradeDetails.outcome === 'YES' ? 'Yes / Up' : 'No / Down',
+          tradeDetails.outcome,
           tradeDetails.limitPriceCents,
           tradeDetails.shares
         )

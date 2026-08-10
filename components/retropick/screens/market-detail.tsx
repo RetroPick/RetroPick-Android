@@ -489,9 +489,18 @@ export function MarketDetail({
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setSelectedOptionIdx(idx)}
+                  onClick={() => {
+                    setSelectedOptionIdx(idx)
+                    setLimitModalOutcome(opt.label as any)
+                    setLimitModalPriceCents(opt.percentage)
+                    if (onTrade) {
+                      onTrade('yes')
+                    } else {
+                      setIsLimitModalOpen(true)
+                    }
+                  }}
                   className={cn(
-                    "flex items-center justify-between rounded-xl border p-3 text-xs font-bold transition-all text-left",
+                    "flex items-center justify-between rounded-xl border p-3.5 text-xs font-bold transition-all text-left active:scale-[0.98]",
                     selectedOptionIdx === idx
                       ? "border-primary bg-primary/10 text-foreground shadow-xs"
                       : "border-border/60 bg-secondary/20 text-muted-foreground hover:text-foreground"

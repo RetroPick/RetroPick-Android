@@ -467,25 +467,20 @@ export function IntelligenceScreen({
           {/* DETAIL VIEW VARIANT 1: WHALE ACTIVITY (SCREEN 2) */}
           {selectedDetailView.type === 'whale' && (
             <div className="space-y-4">
-              {/* Profile Header */}
+              {/* Profile Header (Text Only, No Avatar Image) */}
               <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 via-violet-600 to-sky-500 p-0.5 shadow-md shrink-0">
-                    <div className="w-full h-full rounded-full bg-[#141A26] flex items-center justify-center text-xl">
-                      🐋
-                    </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-base font-black text-white">
+                      {selectedDetailView.item?.ens || selectedDetailView.item?.wallet || '0x72F...9A3'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-700/80 text-indigo-300 font-mono text-[10px] font-bold">
+                      {selectedDetailView.item?.tag || 'Mega Whale'}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-black text-white">{selectedDetailView.item?.ens || selectedDetailView.item?.wallet || 'macroking.eth'}</span>
-                      <span className="px-2 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-700/80 text-indigo-300 font-mono text-[10px] font-bold">
-                        Mega Whale
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                      <span>🎙️</span> Large position • High conviction
-                    </p>
-                  </div>
+                  <p className="text-xs text-slate-400 font-mono font-medium">
+                    Large position • High conviction trader
+                  </p>
                 </div>
 
                 {/* Stats Row (3 Metrics) */}
@@ -505,7 +500,7 @@ export function IntelligenceScreen({
                 </div>
               </div>
 
-              {/* Latest Activity Section (No View All/More) */}
+              {/* Latest Activity Section */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-slate-200 px-0.5">Latest Activity</h3>
                 
@@ -542,59 +537,55 @@ export function IntelligenceScreen({
                 </div>
               </div>
 
-              {/* Market Focus Section */}
-              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
-                <h3 className="text-xs font-bold text-slate-200">Market Focus</h3>
-                
-                <div className="flex items-center justify-between gap-4">
-                  {/* Donut Chart Representation */}
-                  <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
-                    <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#1E293B"
-                        strokeWidth="3.8"
-                      />
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#6366F1"
-                        strokeWidth="3.8"
-                        strokeDasharray="78, 100"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-black font-mono text-white">78%</span>
+              {/* Market Focus Section (Chart & Breakdown - No Politics) */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-200">Market Focus</h3>
+                  <span className="text-[10px] font-mono text-slate-400">Activity Distribution</span>
+                </div>
+
+                {/* Multi-segment Progress Bar Chart */}
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full rounded-full bg-slate-900 overflow-hidden flex p-0.5 gap-0.5 border border-slate-800">
+                    <div className="h-full bg-indigo-500 rounded-l-full transition-all duration-500" style={{ width: '65%' }} />
+                    <div className="h-full bg-sky-400 transition-all duration-500" style={{ width: '20%' }} />
+                    <div className="h-full bg-purple-400 transition-all duration-500" style={{ width: '10%' }} />
+                    <div className="h-full bg-emerald-400 rounded-r-full transition-all duration-500" style={{ width: '5%' }} />
+                  </div>
+                </div>
+
+                {/* Category Breakdown Cards */}
+                <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" />
+                      <span className="text-xs text-slate-300 font-semibold">Crypto</span>
                     </div>
+                    <span className="text-xs font-bold text-white">65%</span>
                   </div>
 
-                  {/* Legend List */}
-                  <div className="space-y-1.5 flex-1 font-mono text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500" /> Crypto
-                      </span>
-                      <span className="font-bold text-white">78%</span>
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0" />
+                      <span className="text-xs text-slate-300 font-semibold">Macro</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-sky-400" /> Economy
-                      </span>
-                      <span className="font-bold text-white">12%</span>
+                    <span className="text-xs font-bold text-white">20%</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shrink-0" />
+                      <span className="text-xs text-slate-300 font-semibold">Tech & AI</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-violet-400" /> Politics
-                      </span>
-                      <span className="font-bold text-white">6%</span>
+                    <span className="text-xs font-bold text-white">10%</span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="text-xs text-slate-300 font-semibold">DeFi</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-slate-500" /> Others
-                      </span>
-                      <span className="font-bold text-white">4%</span>
-                    </div>
+                    <span className="text-xs font-bold text-white">5%</span>
                   </div>
                 </div>
               </div>

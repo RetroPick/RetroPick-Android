@@ -35,7 +35,7 @@ const WHALE_FEEDS = [
   {
     id: 'wf-1',
     wallet: '0x72F...9A3',
-    ens: 'macroking.eth',
+    ens: '0x72F...9A3',
     avatar: '👑',
     type: 'BUY',
     outcome: 'YES',
@@ -62,8 +62,8 @@ const WHALE_FEEDS = [
   },
   {
     id: 'wf-3',
-    wallet: '0x49B...12C',
-    ens: 'degentrader.eth',
+    wallet: '0x99B...4D1',
+    ens: '0x99B...4D1',
     avatar: '⚡',
     type: 'BUY',
     outcome: 'YES',
@@ -77,7 +77,7 @@ const WHALE_FEEDS = [
   {
     id: 'wf-4',
     wallet: '0x72F...9A3',
-    ens: 'macroking.eth',
+    ens: '0x72F...9A3',
     avatar: '👑',
     type: 'BUY',
     outcome: 'NO',
@@ -95,8 +95,8 @@ const LEADERBOARD_TRADERS = [
   {
     rank: 1,
     wallet: '0x72F...9A3',
-    ens: 'macroking',
-    fullEns: 'macroking.eth',
+    ens: '0x72F...9A3',
+    fullEns: '0x72F...9A3',
     verified: true,
     score: 94,
     roi: '+32.4%',
@@ -109,8 +109,8 @@ const LEADERBOARD_TRADERS = [
   {
     rank: 2,
     wallet: '0x1A2...B4C',
-    ens: 'quantwhale',
-    fullEns: 'quantwhale.eth',
+    ens: '0x1A2...B4C',
+    fullEns: '0x1A2...B4C',
     verified: true,
     score: 91,
     roi: '+28.1%',
@@ -137,8 +137,8 @@ const LEADERBOARD_TRADERS = [
   {
     rank: 4,
     wallet: '0x99B...4D1',
-    ens: 'degentrader',
-    fullEns: 'degentrader.eth',
+    ens: '0x99B...4D1',
+    fullEns: '0x99B...4D1',
     verified: true,
     score: 82,
     roi: '+41.2%',
@@ -151,8 +151,8 @@ const LEADERBOARD_TRADERS = [
   {
     rank: 5,
     wallet: '0x33A...88F',
-    ens: 'smallcap',
-    fullEns: 'smallcap.eth',
+    ens: '0x33A...88F',
+    fullEns: '0x33A...88F',
     verified: false,
     score: 76,
     roi: '+12.4%',
@@ -827,7 +827,7 @@ export function IntelligenceScreen({
                           👑
                         </div>
                         <div>
-                          <span className="font-mono text-xs font-bold text-white block">macroking.eth</span>
+                          <span className="font-mono text-xs font-bold text-white block">0x72F...9A3</span>
                           <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
                             High Score
                           </span>
@@ -855,7 +855,7 @@ export function IntelligenceScreen({
                           🐋
                         </div>
                         <div>
-                          <span className="font-mono text-xs font-bold text-white block">whale.eth</span>
+                          <span className="font-mono text-xs font-bold text-white block">0x1A2...B4C</span>
                           <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
                             Smart Money
                           </span>
@@ -883,7 +883,7 @@ export function IntelligenceScreen({
                           🌌
                         </div>
                         <div>
-                          <span className="font-mono text-xs font-bold text-white block">deep_pockets.eth</span>
+                          <span className="font-mono text-xs font-bold text-white block">0x49B...12C</span>
                           <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
                             Top Trader
                           </span>

@@ -616,24 +616,24 @@ export function IntelligenceScreen({
                     </div>
                   </div>
 
-                  {/* Right: Small Compact Buttons inside Portfolio Header */}
-                  <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                  {/* Right: Small Compact Buttons inside Profile Header */}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => toggleFollow(selectedDetailView.item?.wallet || '0x72F...9A3')}
                       className={cn(
-                        "px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs",
+                        "px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition cursor-pointer border",
                         followingWallets.includes(selectedDetailView.item?.wallet || '0x72F...9A3')
-                          ? "bg-slate-800 border border-slate-700 text-slate-300"
-                          : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                          ? "bg-slate-800/90 border-slate-700 text-slate-300"
+                          : "bg-indigo-600 border-indigo-500 hover:bg-indigo-500 text-white"
                       )}
                     >
                       {followingWallets.includes(selectedDetailView.item?.wallet || '0x72F...9A3') ? 'Following' : '+ Follow'}
                     </button>
                     <button
                       onClick={() => setShowPaperFollowConfirmation(true)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 font-mono text-[11px] font-bold transition cursor-pointer"
                     >
-                      <span>▶ Copy</span>
+                      Copy
                     </button>
                   </div>
                 </div>

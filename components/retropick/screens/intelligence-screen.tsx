@@ -988,62 +988,67 @@ export function IntelligenceScreen({
 
               {/* Following Traders Section */}
               <div className="space-y-2.5 pt-1">
-                <h3 className="text-xs font-bold text-white">Following Traders</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-white">Following Traders</h3>
+                  <span className="text-[10px] font-mono text-indigo-400 font-bold">{followingWallets.length} Active</span>
+                </div>
 
                 <div className="space-y-2.5">
-                  {[
-                    { trader: LEADERBOARD_TRADERS[0], period: '90D Active', returnPct: '▲ +28.4%', profit: '+$284' },
-                    { trader: LEADERBOARD_TRADERS[1], period: '30D Active', returnPct: '▲ +12.7%', profit: '+$127' },
-                    { trader: LEADERBOARD_TRADERS[2], period: '90D Active', returnPct: '▲ +18.2%', profit: '+$182' },
-                    { trader: LEADERBOARD_TRADERS[3], period: '60D Active', returnPct: '▲ +34.1%', profit: '+$341' },
-                  ].map((item, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedDetailView({ type: 'trader', item: item.trader })}
-                      className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Rank / Index Number */}
-                        <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
-                          {String(idx + 1).padStart(2, '0')}
-                        </span>
-
-                        {/* Emerald Ring Circular Score */}
-                        <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
-                          <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                            <path
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              fill="none"
-                              stroke="#1E293B"
-                              strokeWidth="2.8"
-                            />
-                            <path
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              fill="none"
-                              stroke="#10B981"
-                              strokeWidth="2.8"
-                              strokeDasharray={`${item.trader.score}, 100`}
-                            />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
-                            {item.trader.score}
+                  {LEADERBOARD_TRADERS.filter(t => followingWallets.includes(t.wallet)).length > 0 ? (
+                    LEADERBOARD_TRADERS.filter(t => followingWallets.includes(t.wallet)).map((trader, idx) => (
+                      <div
+                        key={trader.wallet}
+                        onClick={() => setSelectedDetailView({ type: 'trader', item: trader })}
+                        className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Rank / Index Number */}
+                          <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
+                            {String(idx + 1).padStart(2, '0')}
                           </span>
+
+                          {/* Emerald Ring Circular Score */}
+                          <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+                            <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#1E293B"
+                                strokeWidth="2.8"
+                              />
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#10B981"
+                                strokeWidth="2.8"
+                                strokeDasharray={`${trader.score}, 100`}
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
+                              {trader.score}
+                            </span>
+                          </div>
+
+                          {/* Trader Handle & Active Period */}
+                          <div className="space-y-0.5 truncate">
+                            <h4 className="font-mono text-xs font-bold text-white truncate">{trader.fullEns}</h4>
+                            <span className="text-[10px] font-mono text-slate-400 block">30D Active</span>
+                          </div>
                         </div>
 
-                        {/* Trader Handle & Active Period */}
-                        <div className="space-y-0.5 truncate">
-                          <h4 className="font-mono text-xs font-bold text-white truncate">{item.trader.fullEns}</h4>
-                          <span className="text-[10px] font-mono text-slate-400 block">{item.period}</span>
+                        {/* Right Column: Return % and Profit $ */}
+                        <div className="text-right font-mono shrink-0">
+                          <span className="text-xs font-extrabold text-emerald-400 block">{trader.roi}</span>
+                          <span className="text-[10px] font-bold text-emerald-400 block">{trader.pnl}</span>
                         </div>
                       </div>
-
-                      {/* Right Column: Return % and Profit $ */}
-                      <div className="text-right font-mono shrink-0">
-                        <span className="text-xs font-extrabold text-emerald-400 block">{item.returnPct}</span>
-                        <span className="text-[10px] font-bold text-emerald-400 block">{item.profit}</span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 text-center font-mono text-xs text-slate-400 space-y-1">
+                      <p className="font-bold text-white">No Traders Followed Yet</p>
+                      <p className="text-[11px] text-slate-400">Tap "+ Follow" on any trader in the Traders tab to start auto-copying.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -1062,6 +1067,117 @@ export function IntelligenceScreen({
             </div>
           )}
         </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* COPY STRATEGY BOTTOM SHEET MODAL */}
+      {/* ========================================================================= */}
+      {showPaperFollowConfirmation && (
+        <div className="absolute inset-0 z-[110] flex items-end justify-center bg-black/75 backdrop-blur-sm animate-fade-in p-0">
+          <div className="absolute inset-0" onClick={() => setShowPaperFollowConfirmation(false)} />
+
+          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-5 shadow-2xl animate-slide-up space-y-3.5">
+            <div className="w-10 h-1 bg-slate-600/60 rounded-full mx-auto -mt-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div>
+                <h3 className="text-sm font-extrabold text-white">Copy Strategy</h3>
+                <span className="text-[10px] font-mono text-slate-400">Position copying parameters</span>
+              </div>
+              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-slate-400 hover:text-white cursor-pointer p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target Trader Header (Text-only, No Image/Emoji) */}
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between font-mono">
+              <span className="text-xs text-slate-400 font-medium">Target Trader:</span>
+              <span className="text-xs font-black text-white">{selectedDetailView?.item?.fullEns || selectedDetailView?.item?.wallet || '0x72F...9A3'}</span>
+            </div>
+
+            {/* Configuration Inputs */}
+            <div className="space-y-2.5 font-mono text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Starting balance</span>
+                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
+                  <span className="text-slate-500 mr-1">$</span>
+                  <input
+                    type="number"
+                    value={paperBalanceInput}
+                    onChange={(e) => setPaperBalanceInput(parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Copy amount per trade</span>
+                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
+                  <span className="text-slate-500 mr-1">$</span>
+                  <input
+                    type="number"
+                    value={paperCopySizeInput}
+                    onChange={(e) => setPaperCopySizeInput(parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Maximum per trade</span>
+                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
+                  <span className="text-slate-500 mr-1">$</span>
+                  <input
+                    type="number"
+                    value={paperMaxPerTradeInput}
+                    onChange={(e) => setPaperMaxPerTradeInput(parseFloat(e.target.value) || 0)}
+                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Markets</span>
+                <select
+                  value={paperCategoryInput}
+                  onChange={(e) => setPaperCategoryInput(e.target.value)}
+                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-white font-bold text-xs outline-none cursor-pointer"
+                >
+                  <option value="All">All Categories</option>
+                  <option value="Crypto">Crypto</option>
+                  <option value="Macro">Macro</option>
+                  <option value="Tech & AI">Tech & AI</option>
+                  <option value="DeFi">DeFi</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Confirm Action Button */}
+            <div className="pt-1 space-y-1.5">
+              <button
+                onClick={() => {
+                  const targetWallet = selectedDetailView?.item?.wallet || '0x72F...9A3'
+                  if (!followingWallets.includes(targetWallet)) {
+                    setFollowingWallets(prev => [...prev, targetWallet])
+                  }
+                  setShowPaperFollowConfirmation(false)
+                  setActiveTab('paper')
+                }}
+                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono font-black text-xs shadow-lg transition cursor-pointer"
+              >
+                Confirm Copy Strategy
+              </button>
+
+              <button
+                onClick={() => setShowPaperFollowConfirmation(false)}
+                className="w-full py-1.5 text-center text-xs font-mono font-semibold text-slate-400 hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
 
@@ -1296,122 +1412,7 @@ export function IntelligenceScreen({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* PAPER FOLLOW CONFIRMATION BOTTOM SHEET MODAL (ACTION STAGE) */}
-      {/* ========================================================================= */}
-      {showPaperFollowConfirmation && (
-        <div className="absolute inset-0 z-[110] flex items-end justify-center bg-black/70 backdrop-blur-[2px] animate-fade-in p-0">
-          <div className="absolute inset-0" onClick={() => setShowPaperFollowConfirmation(false)} />
 
-          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl rounded-b-none border-t border-indigo-500/60 bg-[#0E131F] text-white p-5 pb-6 shadow-2xl animate-slide-up flex flex-col space-y-4 max-h-[calc(85vh-92px)] overflow-y-auto">
-            <div className="w-12 h-1 bg-slate-600/60 rounded-full mx-auto -mt-1 mb-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
-
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-sm font-extrabold text-white">Paper Follow Confirmation</h3>
-                <span className="text-[10px] font-bold text-emerald-400 font-mono">SIMULATION MODE</span>
-              </div>
-              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-slate-400 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Target Trader Header */}
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-              <span className="text-xl">👑</span>
-              <div>
-                <h4 className="font-mono text-xs font-bold text-white">macroking</h4>
-                <span className="font-mono text-[10px] text-slate-400">0x72F...9A3</span>
-              </div>
-            </div>
-
-            {/* Configuration Inputs */}
-            <div className="space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Virtual starting balance</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
-                  <input
-                    type="number"
-                    value={paperBalanceInput}
-                    onChange={(e) => setPaperBalanceInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Copy amount per trade</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
-                  <input
-                    type="number"
-                    value={paperCopySizeInput}
-                    onChange={(e) => setPaperCopySizeInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Maximum per trade</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
-                  <input
-                    type="number"
-                    value={paperMaxPerTradeInput}
-                    onChange={(e) => setPaperMaxPerTradeInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300">Markets</span>
-                <select
-                  value={paperCategoryInput}
-                  onChange={(e) => setPaperCategoryInput(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-white font-bold outline-none cursor-pointer"
-                >
-                  <option value="All">All Categories</option>
-                  <option value="Crypto">Crypto</option>
-                  <option value="Politics">Politics</option>
-                  <option value="Macro">Macro</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Explanation Card */}
-            <div className="p-3 rounded-xl border border-indigo-900/60 bg-indigo-950/30 text-[11px] text-slate-300 space-y-1">
-              <p className="font-semibold flex items-center gap-1 text-indigo-300">
-                <Info className="w-3.5 h-3.5" /> How simulation fills work
-              </p>
-              <p className="text-[10px] text-slate-400 leading-relaxed">
-                RetroPick simulates your fill using the next available market price after the trade is observed.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <button
-                onClick={() => {
-                  setShowPaperFollowConfirmation(false)
-                  setActiveTab('paper')
-                }}
-                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-950/50 transition cursor-pointer"
-              >
-                Start Paper Follow
-              </button>
-
-              <button
-                onClick={() => setShowPaperFollowConfirmation(false)}
-                className="w-full py-2.5 text-center text-xs font-semibold text-slate-400 hover:text-white cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* WHALE ALERTS SETTINGS BOTTOM SHEET MODAL (MONITORING STAGE) */}

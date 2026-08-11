@@ -943,23 +943,10 @@ export function IntelligenceScreen({
           )}
 
           {/* ========================================================================= */}
-          {/* MAIN TAB 3: PAPER COPY OVERVIEW */}
+          {/* MAIN TAB 3: PAPER COPY / PORTFOLIO OVERVIEW */}
           {/* ========================================================================= */}
           {activeTab === 'paper' && (
             <div className="space-y-4 animate-fade-in pt-0.5">
-              {/* Top Banner Card */}
-              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 flex items-center gap-3.5 shadow-md">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-2xl shrink-0 text-indigo-400">
-                  📊
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-sm text-white">Paper Copy</h3>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-snug">
-                    Simulate smart trader strategies without real money
-                  </p>
-                </div>
-              </div>
-
               {/* Your Portfolio Card */}
               <div className="p-5 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/90 via-[#141A26] to-[#0D121F] space-y-4 shadow-xl">
                 <div className="flex items-center gap-3">
@@ -967,7 +954,7 @@ export function IntelligenceScreen({
                     👛
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-white">Your Portfolio <span className="text-xs text-slate-400 font-normal">(Simulation)</span></h3>
+                    <h3 className="font-extrabold text-sm text-white">Your Portfolio</h3>
                     <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 font-mono">
                       ▲ +28.4% <span className="text-[10px] text-slate-400 font-normal">vs. starting balance</span>
                     </span>
@@ -975,7 +962,7 @@ export function IntelligenceScreen({
                 </div>
 
                 <div className="pt-1">
-                  <span className="text-3xl font-black text-white font-mono">$1,284</span>
+                  <span className="text-3xl font-black text-white font-mono">$1,284.00</span>
                 </div>
 
                 {/* Vector SVG Performance Area Chart */}
@@ -1001,14 +988,14 @@ export function IntelligenceScreen({
                   </svg>
                 </div>
 
-                {/* Simulation Details Row */}
+                {/* Real Details Row */}
                 <div className="grid grid-cols-2 gap-2 border-t border-slate-800/80 pt-3 text-xs font-mono">
                   <div>
                     <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Starting Balance</span>
-                    <span className="font-extrabold text-white">$1,000</span>
+                    <span className="font-extrabold text-white">$1,000.00</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Simulation Period</span>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Trading Period</span>
                     <span className="font-extrabold text-white">90 Days</span>
                   </div>
                 </div>
@@ -1017,7 +1004,7 @@ export function IntelligenceScreen({
                   onClick={() => setShowPaperFollowConfirmation(true)}
                   className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>▶ Start Simulation</span>
+                  <span>▶ Copy Strategy</span>
                 </button>
               </div>
 
@@ -1027,10 +1014,10 @@ export function IntelligenceScreen({
 
                 <div className="space-y-2.5">
                   {[
-                    { trader: LEADERBOARD_TRADERS[0], period: '90D Simulation', returnPct: '▲ +28.4%', profit: '+$284' },
-                    { trader: LEADERBOARD_TRADERS[1], period: '30D Simulation', returnPct: '▲ +12.7%', profit: '+$127' },
-                    { trader: LEADERBOARD_TRADERS[2], period: '90D Simulation', returnPct: '▲ +18.2%', profit: '+$182' },
-                    { trader: LEADERBOARD_TRADERS[3], period: '60D Simulation', returnPct: '▲ +34.1%', profit: '+$341' },
+                    { trader: LEADERBOARD_TRADERS[0], period: '90D Active', returnPct: '▲ +28.4%', profit: '+$284' },
+                    { trader: LEADERBOARD_TRADERS[1], period: '30D Active', returnPct: '▲ +12.7%', profit: '+$127' },
+                    { trader: LEADERBOARD_TRADERS[2], period: '90D Active', returnPct: '▲ +18.2%', profit: '+$182' },
+                    { trader: LEADERBOARD_TRADERS[3], period: '60D Active', returnPct: '▲ +34.1%', profit: '+$341' },
                   ].map((item, idx) => (
                     <div
                       key={idx}
@@ -1065,7 +1052,7 @@ export function IntelligenceScreen({
                           </span>
                         </div>
 
-                        {/* Trader Handle & Simulation Period */}
+                        {/* Trader Handle & Active Period */}
                         <div className="space-y-0.5 truncate">
                           <h4 className="font-mono text-xs font-bold text-white truncate">{item.trader.fullEns}</h4>
                           <span className="text-[10px] font-mono text-slate-400 block">{item.period}</span>
@@ -1082,15 +1069,15 @@ export function IntelligenceScreen({
                 </div>
               </div>
 
-              {/* Risk-Free Learning Card */}
+              {/* Portfolio Protection Card */}
               <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-start gap-3">
                 <div className="p-1.5 rounded-xl bg-indigo-600/30 text-indigo-400 shrink-0">
-                  <Info className="w-4 h-4" />
+                  <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5 text-xs">
-                  <h4 className="font-extrabold text-white">Risk-Free Learning</h4>
+                  <h4 className="font-extrabold text-white">Automated Copy Management</h4>
                   <p className="text-[11px] text-slate-300 leading-snug">
-                    Paper Copy is a simulation feature. No real money is used. Try strategies, learn, and grow with confidence.
+                    Your portfolio automatically copies top-performing whale positions in real-time with customizable risk parameters.
                   </p>
                 </div>
               </div>

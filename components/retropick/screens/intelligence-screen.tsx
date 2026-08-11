@@ -595,17 +595,15 @@ export function IntelligenceScreen({
           {/* DETAIL VIEW VARIANT 2: TRADER PROFILE (SCREEN 1) */}
           {selectedDetailView.type === 'trader' && (
             <div className="space-y-4">
-              {/* Profile Header */}
-              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-indigo-600 to-violet-600 p-0.5 shadow-md shrink-0">
-                    <div className="w-full h-full rounded-full bg-[#141A26] flex items-center justify-center text-xl">
-                      {selectedDetailView.item?.avatar || '👑'}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
+              {/* Profile Header (Text-only + Top Right Compact Action Buttons) */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3.5 shadow-md">
+                <div className="flex items-start justify-between gap-2">
+                  {/* Left: Text Identity & Badges */}
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-sm font-black text-white">{selectedDetailView.item?.fullEns || selectedDetailView.item?.ens || 'macroking.eth'}</span>
+                      <span className="font-mono text-base font-black text-white">
+                        {selectedDetailView.item?.fullEns || selectedDetailView.item?.wallet || '0x72F...9A3'}
+                      </span>
                       <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
                     </div>
                     <div className="flex items-center gap-1.5 font-mono text-[10px]">
@@ -617,46 +615,68 @@ export function IntelligenceScreen({
                       </span>
                     </div>
                   </div>
+
+                  {/* Right: Small Compact Buttons inside Portfolio Header */}
+                  <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                    <button
+                      onClick={() => toggleFollow(selectedDetailView.item?.wallet || '0x72F...9A3')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs",
+                        followingWallets.includes(selectedDetailView.item?.wallet || '0x72F...9A3')
+                          ? "bg-slate-800 border border-slate-700 text-slate-300"
+                          : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                      )}
+                    >
+                      {followingWallets.includes(selectedDetailView.item?.wallet || '0x72F...9A3') ? 'Following' : '+ Follow'}
+                    </button>
+                    <button
+                      onClick={() => setShowPaperFollowConfirmation(true)}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>▶ Copy</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Smart Score Card */}
-                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between font-mono">
                   <div>
                     <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Smart Score</span>
-                    <span className="text-2xl font-black text-white font-mono">{selectedDetailView.item?.score || 98}<span className="text-xs text-slate-400 font-medium">/100</span></span>
+                    <span className="text-2xl font-black text-white">{selectedDetailView.item?.score || 94}<span className="text-xs text-slate-400 font-medium">/100</span></span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/60">
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/60">
                     ▲ +24.6% <span className="text-[10px] text-slate-400 font-normal">vs. last 30D</span>
                   </span>
                 </div>
 
                 {/* Metrics Row (3 Cards) */}
-                <div className="grid grid-cols-3 gap-2 font-mono text-center pt-1">
+                <div className="grid grid-cols-3 gap-2 font-mono text-center pt-0.5">
                   <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                     <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">ROI</span>
-                    <span className="text-sm font-black text-emerald-400">{selectedDetailView.item?.roi || '+145%'}</span>
+                    <span className="text-sm font-black text-emerald-400">{selectedDetailView.item?.roi || '+32.4%'}</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                     <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Win Rate</span>
-                    <span className="text-sm font-black text-white">{selectedDetailView.item?.winRate || 78}%</span>
+                    <span className="text-sm font-black text-white">{selectedDetailView.item?.winRate || 84}%</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
                     <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Total PnL</span>
-                    <span className="text-sm font-black text-white">{selectedDetailView.item?.pnl || '$1.2M'}</span>
+                    <span className="text-sm font-black text-white">{selectedDetailView.item?.pnl || '+$84,200'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Trading Style Progress Bars */}
+              {/* Trading Style Progress Bars (No Politics) */}
               <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
                 <h3 className="text-xs font-bold text-slate-200">Trading Style</h3>
 
                 <div className="space-y-2.5 font-mono text-xs">
                   {[
                     { cat: 'Crypto', pct: 92 },
-                    { cat: 'Politics', pct: 80 },
-                    { cat: 'Sports', pct: 76 },
-                    { cat: 'Economy', pct: 70 },
+                    { cat: 'Macro / Economy', pct: 84 },
+                    { cat: 'Tech & AI', pct: 78 },
+                    { cat: 'DeFi', pct: 72 },
+                    { cat: 'Sports', pct: 68 },
                   ].map((style) => (
                     <div key={style.cat} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
@@ -674,34 +694,29 @@ export function IntelligenceScreen({
                 </div>
               </div>
 
-              {/* Recent Predictions (No View All) */}
+              {/* Recent Predictions */}
               <div className="space-y-2.5">
                 <h3 className="text-xs font-bold text-slate-200 px-0.5">Recent Predictions</h3>
 
                 <div className="space-y-2.5">
                   {[
-                    { icon: '₿', title: 'Bitcoin ETF Approval?', side: 'YES', price: '42¢', time: '2h ago' },
-                    { icon: '🏛️', title: 'Fed Rate Cut?', side: 'NO', price: '71¢', time: '5h ago' },
-                    { icon: '⚡', title: 'Ethereum ETF in Q2?', side: 'YES', price: '65¢', time: '12h ago' },
+                    { title: 'Bitcoin ETF Approval?', side: 'YES', price: '42¢', time: '2h ago' },
+                    { title: 'Fed Rate Cut in March?', side: 'NO', price: '71¢', time: '5h ago' },
+                    { title: 'Ethereum ETF in Q2?', side: 'YES', price: '65¢', time: '12h ago' },
                   ].map((pred, i) => (
                     <div key={i} className="p-3.5 rounded-2xl bg-[#141A26] border border-slate-800 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
-                          {pred.icon}
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-white">{pred.title}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={cn(
-                              "px-2 py-0.5 rounded font-mono text-[9px] font-black border",
-                              pred.side === 'YES'
-                                ? "bg-emerald-950/90 border-emerald-700 text-emerald-400"
-                                : "bg-rose-950/90 border-rose-700 text-rose-400"
-                            )}>
-                              {pred.side}
-                            </span>
-                            <span className="text-[10px] font-mono text-slate-400">Bought @ {pred.price}</span>
-                          </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{pred.title}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded font-mono text-[9px] font-black border",
+                            pred.side === 'YES'
+                              ? "bg-emerald-950/90 border-emerald-700 text-emerald-400"
+                              : "bg-rose-950/90 border-rose-700 text-rose-400"
+                          )}>
+                            {pred.side}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">Bought @ {pred.price}</span>
                         </div>
                       </div>
 
@@ -709,22 +724,6 @@ export function IntelligenceScreen({
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
-                <button
-                  onClick={() => toggleFollow('0x72F...9A3')}
-                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer"
-                >
-                  + Follow Trader
-                </button>
-                <button
-                  onClick={() => setShowPaperFollowConfirmation(true)}
-                  className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>▶ Run Paper Copy</span>
-                </button>
               </div>
             </div>
           )}

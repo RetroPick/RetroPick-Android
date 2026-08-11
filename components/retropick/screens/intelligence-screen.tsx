@@ -12,7 +12,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   UserCheck,
-  Copy,
   Zap,
   Info,
   CheckCircle2,
@@ -20,15 +19,18 @@ import {
   Sparkles,
   SlidersHorizontal,
   Bell,
-  BellOff,
   ChevronRight,
+  ChevronLeft,
+  Share2,
   Play,
-  TrendingDown,
-  Check
+  RotateCcw,
+  Sliders,
+  DollarSign,
+  Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Mock Data for Whale Trade Feed
+// Mock Data for Whale Trade Feed matching mockup
 const WHALE_FEEDS = [
   {
     id: 'wf-1',
@@ -37,167 +39,129 @@ const WHALE_FEEDS = [
     avatar: '👑',
     type: 'BUY',
     outcome: 'YES',
-    marketTitle: 'Will BTC exceed $150K in 2026?',
-    price: '42¢',
-    amountUsdc: '$42,500.00',
-    shares: '101,190',
-    time: '18s ago',
-    badge: '🐋 Mega Whale',
-    sizeBadge: 'Large size • 6.2% of 24h vol',
-    deltaCents: '+2.1¢',
-    highConviction: false
+    marketTitle: 'Bitcoin ETF Approval?',
+    amountUsdc: '$42,500',
+    time: '18m',
+    tag: 'Mega Whale',
+    tagType: 'amber',
+    barColor: 'amber',
   },
   {
     id: 'wf-2',
-    wallet: '0x1A2...B4C',
-    ens: 'yield_farmer.eth',
-    avatar: '🌾',
-    type: 'SELL',
+    wallet: '0xA3f...9c2',
+    ens: '0xA3f...9c2',
+    avatar: '🐋',
+    type: 'BUY',
     outcome: 'NO',
-    marketTitle: 'Federal Funds Rate < 4.0% by EO 2024',
-    price: '78¢',
-    amountUsdc: '$128,000.00',
-    shares: '164,102',
-    time: '4m ago',
-    badge: '🧠 Smart Money',
-    sizeBadge: 'High conviction',
-    deltaCents: '-4.5¢',
-    highConviction: true
+    marketTitle: 'Fed Rate Cut in March?',
+    amountUsdc: '$120,000',
+    time: '34m',
+    tag: 'Smart Money • 84%',
+    tagType: 'indigo',
+    barColor: 'amber',
   },
   {
     id: 'wf-3',
     wallet: '0x49B...12C',
-    ens: 'satoshi_vault.eth',
+    ens: 'degentrader.eth',
     avatar: '⚡',
     type: 'BUY',
-    outcome: 'NO',
-    marketTitle: 'Fed Decision in July: No change?',
-    price: '71¢',
-    amountUsdc: '$84,000.00',
-    shares: '118,309',
-    time: '8m ago',
-    badge: '🧠 Smart Money',
-    sizeBadge: 'Large size • 4.1% of 24h vol',
-    deltaCents: '+1.5¢',
-    highConviction: false
+    outcome: 'YES',
+    marketTitle: 'Ethereum ETF Approval?',
+    amountUsdc: '$18,200',
+    time: '1h',
+    tag: '',
+    tagType: '',
+    barColor: 'emerald',
   },
   {
     id: 'wf-4',
-    wallet: '0x88A...31B',
-    ens: 'polymarket_king.eth',
-    avatar: '🏆',
+    wallet: '0x72F...9A3',
+    ens: 'macroking.eth',
+    avatar: '👑',
     type: 'BUY',
-    outcome: 'YES',
-    marketTitle: 'Clarity Act (H.R.3633) signed into law in 2026?',
-    price: '18¢',
-    amountUsdc: '$15,000.00',
-    shares: '83,333',
-    time: '24m ago',
-    badge: '🐋 Mega Whale',
-    sizeBadge: 'High conviction',
-    deltaCents: '+3.2¢',
-    highConviction: true
-  }
+    outcome: 'NO',
+    marketTitle: 'Trump 2028 Nomination',
+    amountUsdc: '$65,000',
+    time: '2h',
+    tag: 'Mega Whale',
+    tagType: 'amber',
+    barColor: 'amber',
+  },
 ]
 
-// Mock Data for Smart Money Leaderboard
+// Mock Data for Smart Traders Leaderboard matching mockup
 const LEADERBOARD_TRADERS = [
   {
     rank: 1,
     wallet: '0x72F...9A3',
     ens: 'macroking',
+    fullEns: 'macroking.eth',
     verified: true,
-    score: 91,
-    resolutions: 84,
+    score: 94,
     roi: '+32.4%',
     winRate: 84,
-    pnl: '+$84,200.00',
-    volume: '$480,000',
-    badge: '🐋 Mega Whale',
-    followers: 1240,
-    categoryStrengths: [
-      { category: 'Politics', winRate: 72 },
-      { category: 'Crypto', winRate: 65 },
-      { category: 'Macro', winRate: 45 }
-    ],
-    exposure: [
-      { title: 'Will US GDP Growth Exceed 3.0% in Q3?', side: 'YES', value: '$13.6K', pnl: '+$1,240' },
-      { title: 'Fed Funds Rate Above 5.0% by December', side: 'NO', value: '$7.7K', pnl: '-$450' }
-    ],
-    recentTrades: [
-      { type: 'BUY', outcome: 'YES', shares: '10,000', title: 'SpaceX Mars Mission 2029', time: '2 hours ago' },
-      { type: 'SELL', outcome: 'NO', shares: '5,000', title: 'BTC to hit $100k in 2024', time: 'Yesterday' }
-    ]
+    pnl: '+$84,200',
+    topCategory: 'Crypto',
+    categoryPct: 91,
+    avatar: '👑',
   },
   {
     rank: 2,
-    wallet: '0x49B...12C',
-    ens: 'prediction_god',
+    wallet: '0x1A2...B4C',
+    ens: 'quantwhale',
+    fullEns: 'quantwhale.eth',
     verified: true,
-    score: 88,
-    resolutions: 112,
+    score: 91,
     roi: '+28.1%',
     winRate: 79,
-    pnl: '+$98,400.00',
-    volume: '$310,000',
-    badge: '🧠 Smart Money',
-    followers: 890,
-    categoryStrengths: [
-      { category: 'Crypto', winRate: 88 },
-      { category: 'Tech', winRate: 74 }
-    ],
-    exposure: [],
-    recentTrades: []
+    pnl: '+$62,400',
+    topCategory: 'Macro',
+    categoryPct: 88,
+    avatar: '🐋',
   },
   {
     rank: 3,
-    wallet: '0x12F...99E',
-    ens: 'quant_mind',
+    wallet: '0xA3f...9c2',
+    ens: '0xA3f...9c2',
+    fullEns: '0xA3f...9c2',
     verified: false,
-    score: 82,
-    resolutions: 56,
-    roi: '+19.5%',
-    winRate: 76,
-    pnl: '+$75,200.00',
-    volume: '$220,000',
-    badge: '🎯 High Win-Rate',
-    followers: 650,
-    categoryStrengths: [
-      { category: 'Macro', winRate: 80 }
-    ],
-    exposure: [],
-    recentTrades: []
+    score: 88,
+    roi: '+19.6%',
+    winRate: 81,
+    pnl: '+$45,100',
+    topCategory: 'Politics',
+    categoryPct: 85,
+    avatar: '⚡',
   },
   {
     rank: 4,
-    wallet: '0x88A...31B',
-    ens: 'data_diver',
+    wallet: '0x99B...4D1',
+    ens: 'degentrader',
+    fullEns: 'degentrader.eth',
+    verified: true,
+    score: 82,
+    roi: '+41.2%',
+    winRate: 68,
+    pnl: '+$91,000',
+    topCategory: 'Sports',
+    categoryPct: 76,
+    avatar: '🎲',
+  },
+  {
+    rank: 5,
+    wallet: '0x33A...88F',
+    ens: 'smallcap',
+    fullEns: 'smallcap.eth',
     verified: false,
-    score: 79,
-    resolutions: 201,
-    roi: '+14.2%',
-    winRate: 73,
-    pnl: '+$54,100.00',
-    volume: '$195,000',
-    badge: '⚡ High Volume',
-    followers: 430,
-    categoryStrengths: [],
-    exposure: [],
-    recentTrades: []
-  }
-]
-
-// Mock Data for Discovery Screen
-const TRENDING_TRADERS = [
-  { ens: 'alpha_seeker', pnl: '+12.4%', avatar: '⚡' },
-  { ens: 'defi_degen', pnl: '+8.2%', avatar: '🔥' },
-  { ens: '0x98A...84C', pnl: '+5.7%', avatar: '🎯' }
-]
-
-const TRENDING_MARKETS = [
-  { id: 'm-1', title: 'BTC to $100k by Dec?', odds: '66%', vol: '$4.2M', icon: '₿' },
-  { id: 'm-2', title: 'NFL: Chiefs to win Super Bowl?', odds: '24%', vol: '$1.8M', icon: '🏈' },
-  { id: 'm-3', title: 'Tesla Q4 Earnings Bear?', odds: '78%', vol: '$920K', icon: '📈', highConviction: true }
+    score: 76,
+    roi: '+12.4%',
+    winRate: 74,
+    pnl: '+$18,500',
+    topCategory: 'Crypto',
+    categoryPct: 70,
+    avatar: '🎯',
+  },
 ]
 
 export function IntelligenceScreen({
@@ -205,27 +169,20 @@ export function IntelligenceScreen({
 }: {
   onSelectMarket?: (marketId: string) => void
 }) {
-  // Navigation Sub-Tabs: Whales | Smart Money | Following | Paper | Search
-  const [activeTab, setActiveTab] = useState<'whales' | 'smart_money' | 'following' | 'paper' | 'search'>('whales')
+  const [activeTab, setActiveTab] = useState<'whales' | 'traders' | 'paper'>('whales')
   const [searchQuery, setSearchQuery] = useState('')
-  const [feedFilter, setFeedFilter] = useState<'all' | '25k' | '100k' | 'following'>('all')
-  const [leaderboardCategory, setLeaderboardCategory] = useState<'Overall' | 'Politics' | 'Crypto' | 'Macro' | 'Sports'>('Overall')
-  
-  // Followed Trader & Alert States
   const [followingWallets, setFollowingWallets] = useState<string[]>(['0x72F...9A3'])
-  const [alertedMarkets, setAlertedMarkets] = useState<string[]>(['m-3'])
-  
-  // Modals & Drawers State
   const [selectedTraderProfile, setSelectedTraderProfile] = useState<any>(null)
   const [showQuickBacktestModal, setShowQuickBacktestModal] = useState(false)
   const [showPaperFollowConfirmation, setShowPaperFollowConfirmation] = useState(false)
   const [showWhaleAlertsSettings, setShowWhaleAlertsSettings] = useState(false)
 
+  const [alertedMarkets, setAlertedMarkets] = useState<string[]>(['m-3'])
+
   // Backtest Simulation Settings
   const [backtestTimeframe, setBacktestTimeframe] = useState<'30D' | '90D' | 'ALL'>('30D')
   const [backtestStartingBalance, setBacktestStartingBalance] = useState<number>(1000)
   const [backtestCopySize, setBacktestCopySize] = useState<number>(25)
-  const [backtestRunning, setBacktestRunning] = useState<boolean>(false)
 
   // Paper Follow Settings
   const [paperBalanceInput, setPaperBalanceInput] = useState<number>(1000)
@@ -243,12 +200,12 @@ export function IntelligenceScreen({
   const [dailyMaxAlerts, setDailyMaxAlerts] = useState(12)
 
   // Paper Portfolio Virtual State
-  const [paperPortfolioEquity] = useState(1184.00)
+  const [paperPortfolioEquity] = useState(1240.00)
   const [simulatedFills] = useState([
     {
       id: 'fill-1',
       trader: 'macroking.eth',
-      market: 'Fed Rate Cut Nov 2024',
+      market: 'Bitcoin ETF Approval?',
       side: 'YES',
       sourcePrice: '42.0¢',
       simFill: '44.3¢',
@@ -256,6 +213,8 @@ export function IntelligenceScreen({
       time: '12m ago'
     }
   ])
+
+  const [selectedDetailView, setSelectedDetailView] = useState<{ type: 'whale' | 'trader'; item: any } | null>(null)
 
   const toggleFollow = (wallet: string) => {
     if (followingWallets.includes(wallet)) {
@@ -274,540 +233,695 @@ export function IntelligenceScreen({
   }
 
   return (
-    <div className="relative flex flex-col h-full bg-background animate-fade-up px-4 pb-32 pt-3 space-y-4 text-foreground overflow-y-auto min-h-0 no-scrollbar">
+    <div className="relative flex flex-col h-full bg-[#0B0F17] animate-fade-up px-4 pb-32 pt-2 space-y-3.5 text-foreground overflow-y-auto min-h-0 no-scrollbar">
       
-      {/* 4 Primary Navigation Tabs: Whales | Smart Money | Following | Paper */}
-      <div className="grid grid-cols-4 gap-1 p-1 bg-secondary/30 rounded-xl border border-border/60">
-        <button
-          onClick={() => setActiveTab('whales')}
-          className={cn(
-            "py-2 px-1 text-[11px] font-bold rounded-lg transition-all flex flex-col items-center gap-0.5",
-            activeTab === 'whales'
-              ? "bg-primary text-primary-foreground shadow-md font-extrabold"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Activity className="w-3.5 h-3.5" />
-          <span>Whales</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('smart_money')}
-          className={cn(
-            "py-2 px-1 text-[11px] font-bold rounded-lg transition-all flex flex-col items-center gap-0.5",
-            activeTab === 'smart_money'
-              ? "bg-primary text-primary-foreground shadow-md font-extrabold"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Trophy className="w-3.5 h-3.5" />
-          <span>Smart Money</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('following')}
-          className={cn(
-            "py-2 px-1 text-[11px] font-bold rounded-lg transition-all flex flex-col items-center gap-0.5",
-            activeTab === 'following'
-              ? "bg-primary text-primary-foreground shadow-md font-extrabold"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <UserCheck className="w-3.5 h-3.5" />
-          <span>Following</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('paper')}
-          className={cn(
-            "py-2 px-1 text-[11px] font-bold rounded-lg transition-all flex flex-col items-center gap-0.5",
-            activeTab === 'paper'
-              ? "bg-primary text-primary-foreground shadow-md font-extrabold"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Wallet className="w-3.5 h-3.5" />
-          <span>Paper</span>
-        </button>
-      </div>
-
       {/* ========================================================================= */}
-      {/* 1. WHALE FEED TAB (REALTIME LARGE TRADE STREAM & ALERT SETTINGS SHORTCUT) */}
+      {/* DETAIL VIEW SCREEN (TRIGGERED WHEN TAPPING AN ITEM FROM LIST) */}
       {/* ========================================================================= */}
-      {activeTab === 'whales' && (
-        <div className="space-y-3.5 animate-fade-in">
-          {/* Quick Search & Size Filter Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 bg-secondary/20 border border-border/80 rounded-xl px-3 py-2">
-              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search wallet or trader..."
-                className="w-full bg-transparent text-xs font-semibold text-foreground outline-none placeholder:text-muted-foreground/60"
-              />
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-[11px]">
-              {(['all', '25k', '100k', 'following'] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFeedFilter(f)}
-                  className={cn(
-                    "px-3 py-1 rounded-xl font-bold transition border shrink-0",
-                    feedFilter === f
-                      ? "bg-indigo-600 border-indigo-500 text-white shadow-xs"
-                      : "bg-secondary/20 border-border/60 text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {f === 'all' && 'All'}
-                  {f === '25k' && '>$25K'}
-                  {f === '100k' && '>$100K'}
-                  {f === 'following' && 'Following'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Live Indicator Bar */}
-          <div className="flex items-center justify-between px-1 text-[11px] font-mono">
-            <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>LIVE-ISH • UPDATED 8S AGO</span>
-            </div>
+      {selectedDetailView ? (
+        <div className="space-y-4 animate-fade-in pt-1">
+          {/* Detail View Header with Back Chevron */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <button
-              onClick={() => setShowWhaleAlertsSettings(true)}
-              className="text-indigo-400 hover:underline font-bold flex items-center gap-1"
+              onClick={() => setSelectedDetailView(null)}
+              className="flex items-center gap-1.5 text-slate-300 hover:text-white font-bold text-xs cursor-pointer"
             >
-              <SlidersHorizontal className="w-3 h-3" /> Alert Settings
+              <ChevronLeft className="w-4 h-4 stroke-[2.5px]" />
+              <span>{selectedDetailView.type === 'whale' ? 'Whale Activity' : 'Trader Profile'}</span>
+            </button>
+            <button className="text-slate-400 hover:text-white p-1 cursor-pointer">
+              <Share2 className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Whale Feed List Cards */}
-          <div className="space-y-3">
-            {WHALE_FEEDS.map((feed) => (
-              <div
-                key={feed.id}
-                className="p-4 rounded-2xl border border-border/80 bg-card shadow-sm hover:border-indigo-500/50 transition-all space-y-3"
-              >
-                {/* Header: Market Title & Trade Amount */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 flex-1">
-                    <p className="text-xs font-extrabold text-foreground line-clamp-2 leading-snug">
-                      {feed.marketTitle}
-                    </p>
+          {/* DETAIL VIEW VARIANT 1: WHALE ACTIVITY (SCREEN 2) */}
+          {selectedDetailView.type === 'whale' && (
+            <div className="space-y-4">
+              {/* Profile Header */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 via-violet-600 to-sky-500 p-0.5 shadow-md shrink-0">
+                    <div className="w-full h-full rounded-full bg-[#141A26] flex items-center justify-center text-xl">
+                      🐋
+                    </div>
+                  </div>
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded font-mono text-[10px] font-black border",
-                        feed.type === 'BUY'
-                          ? "bg-emerald-950/80 border-emerald-800 text-emerald-400"
-                          : "bg-rose-950/80 border-rose-800 text-rose-400"
-                      )}>
-                        {feed.type === 'BUY' ? 'BOUGHT' : 'SOLD'} {feed.outcome} @ {feed.price}
+                      <span className="font-mono text-sm font-black text-white">{selectedDetailView.item?.ens || selectedDetailView.item?.wallet || 'macroking.eth'}</span>
+                      <span className="px-2 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-700/80 text-indigo-300 font-mono text-[10px] font-bold">
+                        Mega Whale
                       </span>
                     </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <span className="font-mono text-sm font-black text-foreground block">{feed.amountUsdc}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground">{feed.time}</span>
-                  </div>
-                </div>
-
-                {/* Footer: Wallet handle & Size Badge */}
-                <div className="flex items-center justify-between border-t border-border/40 pt-2.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{feed.avatar}</span>
-                    <button
-                      onClick={() => {
-                        const matched = LEADERBOARD_TRADERS.find(t => t.ens === 'macroking' || t.wallet === feed.wallet) || LEADERBOARD_TRADERS[0]
-                        setSelectedTraderProfile(matched)
-                      }}
-                      className="font-mono text-xs font-bold text-indigo-400 hover:underline flex items-center gap-1"
-                    >
-                      <span>{feed.ens || feed.wallet}</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground bg-secondary/30 px-2 py-0.5 rounded border border-border/50">
-                      {feed.sizeBadge}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const matched = LEADERBOARD_TRADERS.find(t => t.ens === 'macroking' || t.wallet === feed.wallet) || LEADERBOARD_TRADERS[0]
-                        setSelectedTraderProfile(matched)
-                      }}
-                      className="text-[11px] font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-0.5"
-                    >
-                      View Trader &gt;
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. SMART MONEY TAB (LEADERBOARD & TRADER PROFILES) */}
-      {/* ========================================================================= */}
-      {activeTab === 'smart_money' && (
-        <div className="space-y-3.5 animate-fade-in">
-          {/* Category Filter Bar */}
-          <div className="flex items-center justify-between border-b border-border/60 pb-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-              {(['Overall', 'Politics', 'Crypto', 'Macro', 'Sports'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setLeaderboardCategory(cat)}
-                  className={cn(
-                    "px-3 py-1 rounded-xl font-bold transition",
-                    leaderboardCategory === cat
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between px-1 text-xs">
-            <span className="font-extrabold text-foreground">Top Performers</span>
-            <span className="text-[10px] text-muted-foreground font-mono">Last 30 Days</span>
-          </div>
-
-          {/* Leaderboard Cards */}
-          <div className="space-y-2.5">
-            {LEADERBOARD_TRADERS.map((trader) => (
-              <div
-                key={trader.rank}
-                onClick={() => setSelectedTraderProfile(trader)}
-                className="p-3.5 rounded-2xl border border-border/80 bg-card shadow-sm hover:border-indigo-500/50 transition-all cursor-pointer flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-black text-muted-foreground w-4 text-center">
-                    {trader.rank}
-                  </span>
-
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs text-foreground font-mono">{trader.ens}</span>
-                      {trader.verified && <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 fill-blue-400/20" />}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground font-mono">
-                      Score: <strong className="text-foreground">{trader.score}</strong> • {trader.resolutions} Res.
+                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                      <span>🎙️</span> Large position • High conviction
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-right">
-                  <div>
-                    <span className="font-mono text-sm font-black text-emerald-400 block">{trader.roi}</span>
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground">ROI</span>
+                {/* Stats Row (3 Metrics) */}
+                <div className="grid grid-cols-3 gap-2 border-t border-slate-800/80 pt-3 text-center font-mono">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Position</span>
+                    <span className="text-sm font-black text-white">$500K+</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <div className="space-y-0.5 border-x border-slate-800/80 px-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Markets Traded</span>
+                    <span className="text-sm font-black text-white">12</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Win Rate</span>
+                    <span className="text-sm font-black text-white">82%</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <div className="p-3 rounded-xl border border-border/50 bg-secondary/10 text-[10px] text-muted-foreground text-center space-y-1">
-            <p>ⓘ Calculated using historical realized performance on RetroPick and Polymarket.</p>
-          </div>
-        </div>
-      )}
+              {/* Latest Activity Section (No View All/More) */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-slate-200 px-0.5">Latest Activity</h3>
+                
+                <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-4">
+                  {[
+                    { type: 'BUY', side: 'YES', market: 'Bitcoin ETF', amount: '$42,500', time: '2m ago' },
+                    { type: 'SELL', side: 'NO', market: 'Fed Rate Cut', amount: '$120,000', time: '5m ago' },
+                    { type: 'BUY', side: 'YES', market: 'Ethereum ETF', amount: '$85,000', time: '12m ago' },
+                    { type: 'BUY', side: 'YES', market: 'AI Regulation', amount: '$50,000', time: '1h ago' },
+                  ].map((act, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs font-mono relative pl-4 border-l-2 border-indigo-600/40">
+                      <span className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500" />
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-black border",
+                            act.side === 'YES'
+                              ? "bg-emerald-950/90 border-emerald-700 text-emerald-400"
+                              : "bg-rose-950/90 border-rose-700 text-rose-400"
+                          )}>
+                            {act.side}
+                          </span>
+                          <span className="font-bold text-white">
+                            {act.type === 'BUY' ? 'Bought' : 'Sold'} {act.side} on {act.market}
+                          </span>
+                        </div>
+                        <span className="font-black text-white text-xs block pl-0.5">{act.amount}</span>
+                      </div>
 
-      {/* ========================================================================= */}
-      {/* 3. DISCOVERY SEARCH & TRENDING MARKETS (DISCOVERY STAGE) */}
-      {/* ========================================================================= */}
-      {activeTab === 'search' && (
-        <div className="space-y-4 animate-fade-in">
-          {/* Wallet Search Input */}
-          <div className="flex items-center gap-2 bg-secondary/30 border border-border rounded-xl px-3.5 py-2.5">
-            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search wallet or trader..."
-              className="w-full bg-transparent text-xs font-bold text-foreground outline-none placeholder:text-muted-foreground/60"
-            />
-          </div>
-
-          {/* Recent Searches */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              <span>Recent Searches</span>
-              <button className="text-indigo-400 hover:underline">Clear</button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full border border-border/60 bg-secondary/20 text-xs font-mono font-semibold text-foreground flex items-center gap-1.5">
-                <RotateCcwIcon /> 0x482...F1E
-              </span>
-              <span className="px-3 py-1 rounded-full border border-border/60 bg-secondary/20 text-xs font-mono font-semibold text-foreground flex items-center gap-1.5">
-                <RotateCcwIcon /> yield_farmer
-              </span>
-            </div>
-          </div>
-
-          {/* Trending Traders Section */}
-          <div className="space-y-2 pt-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-              Trending Traders
-            </span>
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {TRENDING_TRADERS.map((t, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    const matched = LEADERBOARD_TRADERS.find(tr => tr.ens.includes(t.ens)) || LEADERBOARD_TRADERS[0]
-                    setSelectedTraderProfile(matched)
-                  }}
-                  className="flex items-center gap-2 p-2 px-3 rounded-xl border border-border/70 bg-card hover:border-indigo-500/40 text-xs font-bold shrink-0 transition"
-                >
-                  <span className="text-sm">{t.avatar}</span>
-                  <span className="font-mono text-foreground">{t.ens}</span>
-                  <span className="text-emerald-400 font-mono text-[11px]">{t.pnl}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Trending Markets with High Conviction Badge */}
-          <div className="space-y-2.5 pt-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-              Trending Markets
-            </span>
-
-            {TRENDING_MARKETS.map((m) => (
-              <div key={m.id} className="p-3.5 rounded-2xl border border-border/80 bg-card space-y-2.5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <span className="text-lg bg-secondary/30 p-2 rounded-xl border border-border/50">{m.icon}</span>
-                    <div className="space-y-1">
-                      <p className="text-xs font-extrabold text-foreground">{m.title}</p>
-                      {m.highConviction && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700 text-[10px] font-black text-emerald-400">
-                          HIGH CONVICTION
-                        </span>
-                      )}
+                      <span className="text-[11px] text-slate-400 shrink-0">{act.time}</span>
                     </div>
-                  </div>
-
-                  <div className="text-right font-mono text-xs">
-                    <span className="font-bold text-emerald-400 block">{m.odds} Odds</span>
-                    <span className="text-[10px] text-muted-foreground">VOL {m.vol}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
-                  <button
-                    onClick={() => toggleMarketAlert(m.id)}
-                    className={cn(
-                      "px-3 py-1 rounded-xl text-xs font-bold transition border flex items-center gap-1.5",
-                      alertedMarkets.includes(m.id)
-                        ? "bg-indigo-600 border-indigo-500 text-white"
-                        : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Bell className="w-3 h-3" />
-                    <span>{alertedMarkets.includes(m.id) ? 'Alert Set ✓' : 'Alert Me'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => onSelectMarket?.(m.id)}
-                    className="text-indigo-400 font-bold hover:underline"
-                  >
-                    View Market &gt;
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 4. FOLLOWING & PAPER PORTFOLIO STAGE (REVIEW STAGE) */}
-      {/* ========================================================================= */}
-      {(activeTab === 'paper' || activeTab === 'following') && (
-        <div className="space-y-4 animate-fade-in">
-          {/* Virtual Portfolio Equity Card */}
-          <div className="p-4.5 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/90 via-slate-900 to-slate-950 space-y-3 shadow-xl">
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-[10px] font-bold text-indigo-300 border border-indigo-400/30">
-                SIMULATION
-              </span>
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 font-mono">
-                <TrendingUp className="w-3.5 h-3.5" /> +18.4% (+$184.00)
-              </span>
-            </div>
-
-            <div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Virtual Equity</span>
-              <span className="text-3xl font-black text-white font-mono">${paperPortfolioEquity.toFixed(2)}</span>
-            </div>
-
-            {/* Simulated Performance Curve */}
-            <div className="space-y-1.5 pt-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
-                <span>Performance (Simulated)</span>
-                <div className="flex items-center gap-1 text-[10px] font-mono">
-                  {['1D', '1W', '1M', '3M', 'ALL'].map((tf) => (
-                    <button
-                      key={tf}
-                      className={cn(
-                        "px-2 py-0.5 rounded",
-                        tf === '1M' ? "bg-indigo-600 text-white font-bold" : "text-slate-400 hover:text-white"
-                      )}
-                    >
-                      {tf}
-                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="h-20 w-full bg-indigo-950/30 border border-indigo-800/40 rounded-xl p-2 flex items-end">
-                {/* Vector SVG Performance Area Chart */}
-                <svg viewBox="0 0 200 50" className="w-full h-full overflow-visible">
-                  <path
-                    d="M 0 40 Q 40 35 70 25 T 140 18 T 200 5"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeDasharray="4 2"
-                  />
-                  <circle cx="200" cy="5" r="4" fill="#10b981" />
-                </svg>
-              </div>
-            </div>
-          </div>
+              {/* Market Focus Section */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
+                <h3 className="text-xs font-bold text-slate-200">Market Focus</h3>
+                
+                <div className="flex items-center justify-between gap-4">
+                  {/* Donut Chart Representation */}
+                  <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="#1E293B"
+                        strokeWidth="3.8"
+                      />
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="#6366F1"
+                        strokeWidth="3.8"
+                        strokeDasharray="78, 100"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-black font-mono text-white">78%</span>
+                    </div>
+                  </div>
 
-          {/* Paper Following List */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-muted-foreground uppercase tracking-wider">Paper Following</span>
-              <button
-                onClick={() => setShowPaperFollowConfirmation(true)}
-                className="text-indigo-400 hover:underline flex items-center gap-1"
-              >
-                + Add Trader
-              </button>
-            </div>
-
-            <div className="p-3.5 rounded-2xl border border-border/80 bg-card flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-indigo-600/20 border border-indigo-500/40 grid place-items-center text-sm">
-                  👑
-                </div>
-                <div>
-                  <h4 className="font-mono text-xs font-bold text-foreground">macroking.eth</h4>
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold">+12.4% (Sim)</span>
-                </div>
-              </div>
-
-              <div className="text-right font-mono text-xs">
-                <span className="font-bold text-foreground block">$500</span>
-                <span className="text-[10px] text-muted-foreground">Allocated</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Watchlist Auto-Alerts Toggle Section */}
-          <div className="space-y-2.5 pt-1">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-muted-foreground uppercase tracking-wider">Watchlist Auto-Alerts</span>
-              <button className="text-indigo-400 hover:underline">+</button>
-            </div>
-
-            <div className="p-3 rounded-xl border border-border/80 bg-card space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📈</span>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">Tesla Q4 Earnings</p>
-                    <span className="text-[10px] text-emerald-400 font-mono font-bold">78% Odds • HIGH CONVICTION</span>
+                  {/* Legend List */}
+                  <div className="space-y-1.5 flex-1 font-mono text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500" /> Crypto
+                      </span>
+                      <span className="font-bold text-white">78%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-2 h-2 rounded-full bg-sky-400" /> Economy
+                      </span>
+                      <span className="font-bold text-white">12%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-2 h-2 rounded-full bg-violet-400" /> Politics
+                      </span>
+                      <span className="font-bold text-white">6%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-2 h-2 rounded-full bg-slate-500" /> Others
+                      </span>
+                      <span className="font-bold text-white">4%</span>
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => toggleMarketAlert('m-3')}
-                  className={cn(
-                    "w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer",
-                    alertedMarkets.includes('m-3') ? "bg-indigo-600" : "bg-secondary"
-                  )}
-                >
-                  <div className={cn(
-                    "w-4 h-4 rounded-full bg-white transition-transform",
-                    alertedMarkets.includes('m-3') ? "translate-x-4" : "translate-x-0"
-                  )} />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-border/40 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">👤</span>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">macroking.eth</p>
-                    <span className="text-[10px] text-emerald-400 font-mono font-bold">+12.4% (24h)</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => toggleFollow('0x72F...9A3')}
-                  className={cn(
-                    "w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer",
-                    followingWallets.includes('0x72F...9A3') ? "bg-indigo-600" : "bg-secondary"
-                  )}
-                >
-                  <div className={cn(
-                    "w-4 h-4 rounded-full bg-white transition-transform",
-                    followingWallets.includes('0x72F...9A3') ? "translate-x-4" : "translate-x-0"
-                  )} />
-                </button>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Simulated Fills Stream */}
-          <div className="space-y-2 pt-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-              Simulated Fills Stream
-            </span>
+          {/* DETAIL VIEW VARIANT 2: TRADER PROFILE (SCREEN 1) */}
+          {selectedDetailView.type === 'trader' && (
+            <div className="space-y-4">
+              {/* Profile Header */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-indigo-600 to-violet-600 p-0.5 shadow-md shrink-0">
+                    <div className="w-full h-full rounded-full bg-[#141A26] flex items-center justify-center text-xl">
+                      {selectedDetailView.item?.avatar || '👑'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-sm font-black text-white">{selectedDetailView.item?.fullEns || selectedDetailView.item?.ens || 'macroking.eth'}</span>
+                      <CheckCircle2 className="w-4 h-4 text-blue-400 fill-blue-400/20" />
+                    </div>
+                    <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black">
+                        Rank #{selectedDetailView.item?.rank || 1}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-950/90 border border-indigo-700/80 text-indigo-300 font-bold">
+                        Smart Trader
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            {simulatedFills.map((fill) => (
-              <div key={fill.id} className="p-3.5 rounded-2xl border border-border/80 bg-card space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-indigo-400 font-bold">✢ {fill.trader} entered</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700 text-[10px] font-black text-emerald-400">
-                    {fill.side}
+                {/* Smart Score Card */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Smart Score</span>
+                    <span className="text-2xl font-black text-white font-mono">{selectedDetailView.item?.score || 98}<span className="text-xs text-slate-400 font-medium">/100</span></span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-400 font-mono bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-700/60">
+                    ▲ +24.6% <span className="text-[10px] text-slate-400 font-normal">vs. last 30D</span>
                   </span>
                 </div>
-                <p className="text-xs font-bold text-foreground">{fill.market}</p>
 
-                <div className="grid grid-cols-3 gap-2 bg-secondary/30 p-2 rounded-xl border border-border/40 text-center font-mono text-xs">
-                  <div>
-                    <span className="text-[9px] text-muted-foreground block">Source</span>
-                    <span className="font-bold text-foreground">{fill.sourcePrice}</span>
+                {/* Metrics Row (3 Cards) */}
+                <div className="grid grid-cols-3 gap-2 font-mono text-center pt-1">
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">ROI</span>
+                    <span className="text-sm font-black text-emerald-400">{selectedDetailView.item?.roi || '+145%'}</span>
                   </div>
-                  <div>
-                    <span className="text-[9px] text-muted-foreground block">Sim Fill</span>
-                    <span className="font-bold text-emerald-400">{fill.simFill}</span>
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Win Rate</span>
+                    <span className="text-sm font-black text-white">{selectedDetailView.item?.winRate || 78}%</span>
                   </div>
-                  <div>
-                    <span className="text-[9px] text-muted-foreground block">Slippage</span>
-                    <span className="font-bold text-amber-400">{fill.slippage}</span>
+                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Total PnL</span>
+                    <span className="text-sm font-black text-white">{selectedDetailView.item?.pnl || '$1.2M'}</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Trading Style Progress Bars */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
+                <h3 className="text-xs font-bold text-slate-200">Trading Style</h3>
+
+                <div className="space-y-2.5 font-mono text-xs">
+                  {[
+                    { cat: 'Crypto', pct: 92 },
+                    { cat: 'Politics', pct: 80 },
+                    { cat: 'Sports', pct: 76 },
+                    { cat: 'Economy', pct: 70 },
+                  ].map((style) => (
+                    <div key={style.cat} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-300 font-semibold">{style.cat}</span>
+                        <span className="font-bold text-white">{style.pct}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-indigo-600 to-violet-500 rounded-full"
+                          style={{ width: `${style.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Predictions (No View All) */}
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold text-slate-200 px-0.5">Recent Predictions</h3>
+
+                <div className="space-y-2.5">
+                  {[
+                    { icon: '₿', title: 'Bitcoin ETF Approval?', side: 'YES', price: '42¢', time: '2h ago' },
+                    { icon: '🏛️', title: 'Fed Rate Cut?', side: 'NO', price: '71¢', time: '5h ago' },
+                    { icon: '⚡', title: 'Ethereum ETF in Q2?', side: 'YES', price: '65¢', time: '12h ago' },
+                  ].map((pred, i) => (
+                    <div key={i} className="p-3.5 rounded-2xl bg-[#141A26] border border-slate-800 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
+                          {pred.icon}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{pred.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded font-mono text-[9px] font-black border",
+                              pred.side === 'YES'
+                                ? "bg-emerald-950/90 border-emerald-700 text-emerald-400"
+                                : "bg-rose-950/90 border-rose-700 text-rose-400"
+                            )}>
+                              {pred.side}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">Bought @ {pred.price}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className="text-[11px] font-mono text-slate-400 shrink-0">{pred.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={() => toggleFollow('0x72F...9A3')}
+                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+                >
+                  + Follow Trader
+                </button>
+                <button
+                  onClick={() => setShowPaperFollowConfirmation(true)}
+                  className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>▶ Run Paper Copy</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+      ) : (
+        /* ========================================================================= */
+        /* MAIN LIST TAB SCREEN (WHALES LIST | TRADERS LIST | PAPER COPY OVERVIEW) */
+        /* ========================================================================= */
+        <>
+          {/* Search Input persistent at top */}
+          <div className="relative">
+            <div className="flex items-center gap-2.5 bg-[#141A26] border border-slate-800 rounded-2xl px-3.5 py-3 shadow-inner focus-within:border-indigo-500/80 transition-all">
+              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search wallet, ENS, or market..."
+                className="w-full bg-transparent text-xs font-medium text-white outline-none placeholder:text-slate-500"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white cursor-pointer">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Search dropdown results */}
+            {searchQuery.trim().length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-[#141A26] border border-slate-800 shadow-2xl space-y-1 text-xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase px-2 tracking-wider block">Matching Traders</span>
+                {LEADERBOARD_TRADERS.filter(t => t.ens.toLowerCase().includes(searchQuery.toLowerCase()) || t.wallet.toLowerCase().includes(searchQuery.toLowerCase())).map((trader) => (
+                  <div
+                    key={trader.rank}
+                    onClick={() => {
+                      setSelectedDetailView({ type: 'trader', item: trader })
+                      setSearchQuery('')
+                    }}
+                    className="p-2 rounded-xl hover:bg-slate-800 flex items-center justify-between cursor-pointer transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-white">{trader.fullEns}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 font-mono">Score {trader.score}</span>
+                    </div>
+                    <span className="font-mono text-emerald-400 font-bold">{trader.roi} ROI</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Dynamic Icon+Text Expandable Navigation Tabs */}
+          <div className="flex items-center gap-1.5 p-1.5 bg-[#141A26] rounded-2xl border border-slate-800/80 shadow-xs">
+            {[
+              { id: 'whales', label: 'Whales', icon: Activity },
+              { id: 'traders', label: 'Traders', icon: Trophy },
+              { id: 'paper', label: 'Paper Copy', icon: Wallet },
+            ].map((t) => {
+              const Icon = t.icon
+              const isActive = activeTab === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={cn(
+                    "flex h-9 items-center justify-center gap-2 transition-all duration-200 cursor-pointer rounded-xl text-xs font-bold my-auto",
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 px-3.5 flex-1"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800/60 px-3 shrink-0"
+                  )}
+                  title={t.label}
+                >
+                  <Icon className={cn("w-4 h-4 shrink-0 stroke-[2.2px]", isActive ? "text-white" : "text-slate-400")} />
+                  {isActive && (
+                    <span className="whitespace-nowrap font-extrabold text-xs">
+                      {t.label}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* MAIN TAB 1: WHALES FEED LIST */}
+          {/* ========================================================================= */}
+          {activeTab === 'whales' && (
+            <div className="space-y-3 animate-fade-in pt-0.5">
+              {WHALE_FEEDS.map((feed) => (
+                <div
+                  key={feed.id}
+                  onClick={() => setSelectedDetailView({ type: 'whale', item: feed })}
+                  className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer relative overflow-hidden flex gap-3 shadow-md"
+                >
+                  {/* Left Vertical Bar Accent */}
+                  <div className={cn(
+                    "w-1 rounded-full shrink-0 my-0.5",
+                    feed.barColor === 'emerald' ? "bg-emerald-500" : "bg-amber-400"
+                  )} />
+
+                  <div className="flex-1 space-y-2">
+                    {/* Top Row: Title & Time */}
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-xs font-bold text-white leading-snug">{feed.marketTitle}</h4>
+                      <span className="text-[11px] font-mono text-slate-500 shrink-0">{feed.time}</span>
+                    </div>
+
+                    {/* Middle Row: Badge & Amount */}
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-black tracking-wide border",
+                        feed.outcome === 'YES'
+                          ? "bg-emerald-950/90 border-emerald-800 text-emerald-400"
+                          : "bg-rose-950/90 border-rose-800 text-rose-400"
+                      )}>
+                        {feed.type === 'BUY' ? 'BOUGHT' : 'SOLD'} {feed.outcome}
+                      </span>
+                      <span className="text-base font-black text-white">{feed.amountUsdc}</span>
+                    </div>
+
+                    {/* Bottom Row: Handle & Tag Badge */}
+                    <div className="flex items-center justify-between font-mono text-xs pt-0.5">
+                      <span className="text-slate-400 font-semibold">{feed.ens}</span>
+                      {feed.tag ? (
+                        <span className={cn(
+                          "px-2.5 py-0.5 rounded-lg text-[10px] font-bold border",
+                          feed.tagType === 'indigo'
+                            ? "bg-indigo-950/90 border-indigo-800 text-indigo-300"
+                            : "bg-amber-950/90 border-amber-800/80 text-amber-400"
+                        )}>
+                          {feed.tag}
+                        </span>
+                      ) : <span />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MAIN TAB 2: TRADERS LEADERBOARD LIST */}
+          {/* ========================================================================= */}
+          {activeTab === 'traders' && (
+            <div className="space-y-3 animate-fade-in pt-0.5">
+              {/* Header Title */}
+              <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1 pb-0.5">
+                <span>LEADERBOARD</span>
+                <span>·</span>
+                <span>SMART SCORE</span>
+              </div>
+
+              <div className="space-y-2.5">
+                {LEADERBOARD_TRADERS.map((trader) => (
+                  <div
+                    key={trader.rank}
+                    onClick={() => setSelectedDetailView({ type: 'trader', item: trader })}
+                    className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Rank Number */}
+                      <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
+                        {String(trader.rank).padStart(2, '0')}
+                      </span>
+
+                      {/* Emerald Ring Circular Score */}
+                      <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+                        <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#1E293B"
+                            strokeWidth="2.8"
+                          />
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#10B981"
+                            strokeWidth="2.8"
+                            strokeDasharray={`${trader.score}, 100`}
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
+                          {trader.score}
+                        </span>
+                      </div>
+
+                      {/* Trader Handle & Metrics */}
+                      <div className="space-y-0.5 truncate">
+                        <h4 className="font-mono text-xs font-bold text-white truncate">{trader.fullEns}</h4>
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span className="text-emerald-400 font-bold">ROI {trader.roi}</span>
+                          <span className="text-slate-400 font-medium">WR {trader.winRate}%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Category Specialty */}
+                    <div className="text-right font-mono shrink-0">
+                      <span className="text-[10px] text-slate-500 font-semibold block">{trader.topCategory}</span>
+                      <span className="text-xs font-bold text-slate-300 block">{trader.categoryPct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MAIN TAB 3: PAPER COPY OVERVIEW */}
+          {/* ========================================================================= */}
+          {activeTab === 'paper' && (
+            <div className="space-y-4 animate-fade-in pt-0.5">
+              {/* Top Banner Card */}
+              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 flex items-center gap-3.5 shadow-md">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-2xl shrink-0 text-indigo-400">
+                  📊
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">Paper Copy</h3>
+                  <p className="text-xs font-semibold text-slate-400 mt-0.5 leading-snug">
+                    Simulate smart trader strategies without real money
+                  </p>
+                </div>
+              </div>
+
+              {/* Your Portfolio Card */}
+              <div className="p-5 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/90 via-[#141A26] to-[#0D121F] space-y-4 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-lg text-indigo-300">
+                    👛
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-white">Your Portfolio <span className="text-xs text-slate-400 font-normal">(Simulation)</span></h3>
+                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 font-mono">
+                      ▲ +28.4% <span className="text-[10px] text-slate-400 font-normal">vs. starting balance</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <span className="text-3xl font-black text-white font-mono">$1,284</span>
+                </div>
+
+                {/* Vector SVG Performance Area Chart */}
+                <div className="h-16 w-full pt-1">
+                  <svg viewBox="0 0 200 40" className="w-full h-full overflow-visible">
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0 35 Q 40 30 70 20 T 140 15 T 200 5 L 200 40 L 0 40 Z"
+                      fill="url(#chartGrad)"
+                    />
+                    <path
+                      d="M 0 35 Q 40 30 70 20 T 140 15 T 200 5"
+                      fill="none"
+                      stroke="#6366f1"
+                      strokeWidth="2.5"
+                    />
+                    <circle cx="200" cy="5" r="3.5" fill="#818cf8" />
+                  </svg>
+                </div>
+
+                {/* Simulation Details Row */}
+                <div className="grid grid-cols-2 gap-2 border-t border-slate-800/80 pt-3 text-xs font-mono">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Starting Balance</span>
+                    <span className="font-extrabold text-white">$1,000</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Simulation Period</span>
+                    <span className="font-extrabold text-white">90 Days</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowPaperFollowConfirmation(true)}
+                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>▶ Start Simulation</span>
+                </button>
+              </div>
+
+              {/* Following Traders Section (No View All link) */}
+              <div className="space-y-2.5 pt-1">
+                <h3 className="text-xs font-bold text-white">Following Traders</h3>
+
+                <div className="space-y-2.5">
+                  {/* Trader 1 */}
+                  <div
+                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[0] })}
+                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
+                          👑
+                        </div>
+                        <div>
+                          <span className="font-mono text-xs font-bold text-white block">macroking.eth</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                            High Score
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +28.4%</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">+$284</span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+                      <p>90D Simulation</p>
+                    </div>
+                  </div>
+
+                  {/* Trader 2 */}
+                  <div
+                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[1] || LEADERBOARD_TRADERS[0] })}
+                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
+                          🐋
+                        </div>
+                        <div>
+                          <span className="font-mono text-xs font-bold text-white block">whale.eth</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                            Smart Money
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +12.7%</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">+$127</span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+                      <p>30D Simulation</p>
+                    </div>
+                  </div>
+
+                  {/* Trader 3 */}
+                  <div
+                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[2] || LEADERBOARD_TRADERS[0] })}
+                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
+                          🌌
+                        </div>
+                        <div>
+                          <span className="font-mono text-xs font-bold text-white block">deep_pockets.eth</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                            Top Trader
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +18.2%</span>
+                        <span className="text-[10px] text-emerald-400 font-bold">+$182</span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
+                      <p>90D Simulation</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk-Free Learning Card */}
+              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-start gap-3">
+                <div className="p-1.5 rounded-xl bg-indigo-600/30 text-indigo-400 shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5 text-xs">
+                  <h4 className="font-extrabold text-white">Risk-Free Learning</h4>
+                  <p className="text-[11px] text-slate-300 leading-snug">
+                    Paper Copy is a simulation feature. No real money is used. Try strategies, learn, and grow with confidence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
+
+
+
+
 
       {/* ========================================================================= */}
       {/* 5. WALLET PROFILE & QUICK BACKTEST DRAWER (ANALYSIS STAGE) */}
@@ -840,7 +954,7 @@ export function IntelligenceScreen({
                 </div>
               </div>
 
-              <button onClick={() => setSelectedTraderProfile(null)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setSelectedTraderProfile(null)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -850,7 +964,7 @@ export function IntelligenceScreen({
               <button
                 onClick={() => toggleFollow(selectedTraderProfile.wallet)}
                 className={cn(
-                  "py-2.5 px-3 rounded-xl font-bold text-xs transition border flex items-center justify-center gap-1.5",
+                  "py-2.5 px-3 rounded-xl font-bold text-xs transition border flex items-center justify-center gap-1.5 cursor-pointer",
                   followingWallets.includes(selectedTraderProfile.wallet)
                     ? "bg-emerald-950/80 border-emerald-700 text-emerald-400"
                     : "bg-indigo-600 border-indigo-500 text-white shadow-lg"
@@ -861,7 +975,7 @@ export function IntelligenceScreen({
 
               <button
                 onClick={() => setShowQuickBacktestModal(true)}
-                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" /> Quick Backtest
               </button>
@@ -934,7 +1048,7 @@ export function IntelligenceScreen({
               <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
                 <Play className="w-4 h-4 text-indigo-400 fill-indigo-400" /> Quick Backtest Simulation
               </h3>
-              <button onClick={() => setShowQuickBacktestModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowQuickBacktestModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -949,7 +1063,7 @@ export function IntelligenceScreen({
                       key={tf}
                       onClick={() => setBacktestTimeframe(tf)}
                       className={cn(
-                        "py-2 rounded-xl font-bold transition border",
+                        "py-2 rounded-xl font-bold transition border cursor-pointer",
                         backtestTimeframe === tf
                           ? "bg-indigo-600 border-indigo-500 text-white"
                           : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
@@ -1052,7 +1166,7 @@ export function IntelligenceScreen({
                 <h3 className="text-sm font-extrabold text-white">Paper Follow Confirmation</h3>
                 <span className="text-[10px] font-bold text-emerald-400 font-mono">SIMULATION MODE</span>
               </div>
-              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1166,9 +1280,9 @@ export function IntelligenceScreen({
 
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h3 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                <Bell className="w-4 h-4 text-indigo-400" /> Alerts & Whale Settings
+                <Bell className="w-4 h-4 text-indigo-400" /> Whale Alerts Settings
               </h3>
-              <button onClick={() => setShowWhaleAlertsSettings(false)} className="text-muted-foreground hover:text-foreground">
+              <button onClick={() => setShowWhaleAlertsSettings(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1252,7 +1366,7 @@ export function IntelligenceScreen({
                       key={cat}
                       onClick={() => setAlertCategory(cat)}
                       className={cn(
-                        "px-3 py-1 rounded-xl text-xs font-bold transition border shrink-0",
+                        "px-3 py-1 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer",
                         alertCategory === cat
                           ? "bg-indigo-600 border-indigo-500 text-white"
                           : "bg-secondary/20 border-border text-muted-foreground"
@@ -1288,13 +1402,5 @@ export function IntelligenceScreen({
         </div>
       )}
     </div>
-  )
-}
-
-function RotateCcwIcon() {
-  return (
-    <svg className="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
   )
 }

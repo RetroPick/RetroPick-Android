@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Activity,
   Trophy,
@@ -379,29 +379,36 @@ export function IntelligenceScreen({
 }: {
   onSelectMarket?: (marketId: string) => void
 }) {
-  const [followingWallets, setFollowingWallets] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('retropick_following_wallets')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed)) return parsed
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return ['0x72F...9A3']
-  })
+  const [activeTab, setActiveTab] = useState<'whales' | 'traders' | 'paper'>('whales')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [followingWallets, setFollowingWallets] = useState<string[]>(['0x72F...9A3'])
+  const isMounted = useRef(false)
 
-  // Persist followingWallets state to localStorage
+  // Hydration-safe initial load from localStorage on client mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('retropick_following_wallets', JSON.stringify(followingWallets))
-      } catch (e) {
-        console.error(e)
+    try {
+      const saved = localStorage.getItem('retropick_following_wallets')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setFollowingWallets(parsed)
+        }
       }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
+  // Persist followingWallets state to localStorage on updates after initial mount
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true
+      return
+    }
+    try {
+      localStorage.setItem('retropick_following_wallets', JSON.stringify(followingWallets))
+    } catch (e) {
+      console.error(e)
     }
   }, [followingWallets])
   const [selectedTraderProfile, setSelectedTraderProfile] = useState<any>(null)
@@ -478,7 +485,7 @@ export function IntelligenceScreen({
 
   return (
     <div className={cn(
-      "relative flex flex-col h-full bg-[#0B0F17] animate-fade-up px-4 pb-32 pt-2 space-y-3.5 text-foreground min-h-0 no-scrollbar",
+      "relative flex flex-col h-full bg-background animate-fade-up px-4 pb-32 pt-2 space-y-3.5 text-foreground min-h-0 no-scrollbar",
       showPaperFollowConfirmation ? "overflow-hidden" : "overflow-y-auto"
     )}>
       
@@ -488,15 +495,15 @@ export function IntelligenceScreen({
       {selectedDetailView ? (
         <div className="space-y-4 animate-fade-in pt-1">
           {/* Detail View Header with Back Chevron */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
             <button
               onClick={() => setSelectedDetailView(null)}
-              className="flex items-center gap-1.5 text-slate-300 hover:text-white font-bold text-xs cursor-pointer"
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground font-bold text-xs cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4 stroke-[2.5px]" />
               <span>{selectedDetailView.type === 'whale' ? 'Whale Activity' : 'Trader Profile'}</span>
             </button>
-            <button className="text-slate-400 hover:text-white p-1 cursor-pointer">
+            <button className="text-muted-foreground hover:text-foreground p-1 cursor-pointer">
               <Share2 className="w-4 h-4" />
             </button>
           </div>
@@ -505,34 +512,34 @@ export function IntelligenceScreen({
           {selectedDetailView.type === 'whale' && (
             <div className="space-y-4">
               {/* Profile Header (Text Only, No Avatar Image) */}
-              <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-card border border-border/60 space-y-3 shadow-sm">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-base font-black text-white">
+                    <span className="font-mono text-base font-black text-foreground">
                       {selectedDetailView.item?.ens || selectedDetailView.item?.wallet || '0x72F...9A3'}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-indigo-950/90 border border-indigo-700/80 text-indigo-300 font-mono text-[10px] font-bold">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-primary/15 border border-primary/20 text-primary font-mono text-[10px] font-bold">
                       {selectedDetailView.item?.tag || 'Mega Whale'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono font-medium">
+                  <p className="text-xs text-muted-foreground font-mono font-medium">
                     Large position • High conviction trader
                   </p>
                 </div>
 
                 {/* Stats Row (3 Metrics) */}
-                <div className="grid grid-cols-3 gap-2 border-t border-slate-800/80 pt-3 text-center font-mono">
+                <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-3 text-center font-mono">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Position</span>
-                    <span className="text-sm font-black text-white">$500K+</span>
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Total Position</span>
+                    <span className="text-sm font-black text-foreground">$500K+</span>
                   </div>
-                  <div className="space-y-0.5 border-x border-slate-800/80 px-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Markets Traded</span>
-                    <span className="text-sm font-black text-white">12</span>
+                  <div className="space-y-0.5 border-x border-border/60 px-1">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Markets Traded</span>
+                    <span className="text-sm font-black text-foreground">12</span>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Win Rate</span>
-                    <span className="text-sm font-black text-white">82%</span>
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Win Rate</span>
+                    <span className="text-sm font-black text-foreground">82%</span>
                   </div>
                 </div>
               </div>
@@ -772,17 +779,17 @@ export function IntelligenceScreen({
         <>
           {/* Search Input persistent at top */}
           <div className="relative">
-            <div className="flex items-center gap-2.5 bg-[#141A26] border border-slate-800 rounded-2xl px-3.5 py-3 shadow-inner focus-within:border-indigo-500/80 transition-all">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2.5 bg-card border border-border/60 rounded-2xl px-3.5 py-3 shadow-sm focus-within:border-primary/80 transition-all">
+              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search wallet, ENS, or market..."
-                className="w-full bg-transparent text-xs font-medium text-white outline-none placeholder:text-slate-500"
+                className="w-full bg-transparent text-xs font-medium text-foreground outline-none placeholder:text-muted-foreground"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white cursor-pointer">
+                <button onClick={() => setSearchQuery('')} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -790,8 +797,8 @@ export function IntelligenceScreen({
 
             {/* Search dropdown results */}
             {searchQuery.trim().length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-[#141A26] border border-slate-800 shadow-2xl space-y-1 text-xs">
-                <span className="text-[10px] font-bold text-slate-400 uppercase px-2 tracking-wider block">Matching Traders</span>
+              <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-card border border-border/60 shadow-2xl space-y-1 text-xs">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase px-2 tracking-wider block">Matching Traders</span>
                 {LEADERBOARD_TRADERS.filter(t => t.ens.toLowerCase().includes(searchQuery.toLowerCase()) || t.wallet.toLowerCase().includes(searchQuery.toLowerCase())).map((trader) => (
                   <div
                     key={trader.rank}
@@ -799,11 +806,11 @@ export function IntelligenceScreen({
                       setSelectedDetailView({ type: 'trader', item: trader })
                       setSearchQuery('')
                     }}
-                    className="p-2 rounded-xl hover:bg-slate-800 flex items-center justify-between cursor-pointer transition"
+                    className="p-2 rounded-xl hover:bg-secondary/40 flex items-center justify-between cursor-pointer transition"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-white">{trader.fullEns}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 font-mono">Score {trader.score}</span>
+                      <span className="font-mono font-bold text-foreground">{trader.fullEns}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 border border-primary/20 text-primary font-mono">Score {trader.score}</span>
                     </div>
                     <span className="font-mono text-emerald-400 font-bold">{trader.roi} ROI</span>
                   </div>
@@ -813,7 +820,7 @@ export function IntelligenceScreen({
           </div>
 
           {/* Dynamic Icon+Text Expandable Navigation Tabs */}
-          <div className="flex items-center gap-1.5 p-1.5 bg-[#141A26] rounded-2xl border border-slate-800/80 shadow-xs">
+          <div className="flex items-center gap-1.5 p-1.5 bg-card rounded-2xl border border-border/60 shadow-sm">
             {[
               { id: 'whales', label: 'Whales', icon: Activity },
               { id: 'traders', label: 'Traders', icon: Trophy },
@@ -828,12 +835,12 @@ export function IntelligenceScreen({
                   className={cn(
                     "flex h-9 items-center justify-center gap-2 transition-all duration-200 cursor-pointer rounded-xl text-xs font-bold my-auto",
                     isActive
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 px-3.5 flex-1"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/60 px-3 shrink-0"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 px-3.5 flex-1"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40 px-3 shrink-0"
                   )}
                   title={t.label}
                 >
-                  <Icon className={cn("w-4 h-4 shrink-0 stroke-[2.2px]", isActive ? "text-white" : "text-slate-400")} />
+                  <Icon className={cn("w-4 h-4 shrink-0 stroke-[2.2px]", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
                   {isActive && (
                     <span className="whitespace-nowrap font-extrabold text-xs">
                       {t.label}
@@ -853,19 +860,19 @@ export function IntelligenceScreen({
                 <div
                   key={feed.id}
                   onClick={() => setSelectedDetailView({ type: 'whale', item: feed })}
-                  className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer relative overflow-hidden flex gap-3 shadow-md"
+                  className="p-3.5 rounded-2xl border border-border/60 bg-card hover:border-primary/40 transition-all cursor-pointer relative overflow-hidden flex gap-3 shadow-sm"
                 >
                   {/* Left Vertical Bar Accent */}
                   <div className={cn(
                     "w-1 rounded-full shrink-0 my-0.5",
-                    feed.barColor === 'emerald' ? "bg-emerald-500" : "bg-amber-400"
+                    feed.barColor === 'emerald' ? "bg-emerald-500" : "bg-primary"
                   )} />
 
                   <div className="flex-1 space-y-2">
                     {/* Top Row: Title & Time */}
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-white leading-snug">{feed.marketTitle}</h4>
-                      <span className="text-[11px] font-mono text-slate-500 shrink-0">{feed.time}</span>
+                      <h4 className="text-xs sm:text-sm font-bold text-foreground leading-snug">{feed.marketTitle}</h4>
+                      <span className="text-[11px] font-mono text-muted-foreground shrink-0">{feed.time}</span>
                     </div>
 
                     {/* Middle Row: Badge & Amount */}
@@ -873,24 +880,19 @@ export function IntelligenceScreen({
                       <span className={cn(
                         "px-2 py-0.5 rounded text-[10px] font-black tracking-wide border",
                         feed.outcome === 'YES'
-                          ? "bg-emerald-950/90 border-emerald-800 text-emerald-400"
-                          : "bg-rose-950/90 border-rose-800 text-rose-400"
+                          ? "bg-emerald-950/80 border-emerald-700/80 text-emerald-400"
+                          : "bg-rose-950/80 border-rose-700/80 text-rose-400"
                       )}>
                         {feed.type === 'BUY' ? 'BOUGHT' : 'SOLD'} {feed.outcome}
                       </span>
-                      <span className="text-base font-black text-white">{feed.amountUsdc}</span>
+                      <span className="text-base font-black text-foreground">{feed.amountUsdc}</span>
                     </div>
 
                     {/* Bottom Row: Handle & Tag Badge */}
                     <div className="flex items-center justify-between font-mono text-xs pt-0.5">
-                      <span className="text-slate-400 font-semibold">{feed.ens}</span>
+                      <span className="text-muted-foreground font-semibold">{feed.ens}</span>
                       {feed.tag ? (
-                        <span className={cn(
-                          "px-2.5 py-0.5 rounded-lg text-[10px] font-bold border",
-                          feed.tagType === 'indigo'
-                            ? "bg-indigo-950/90 border-indigo-800 text-indigo-300"
-                            : "bg-amber-950/90 border-amber-800/80 text-amber-400"
-                        )}>
+                        <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border bg-secondary/40 border-border/60 text-foreground">
                           {feed.tag}
                         </span>
                       ) : <span />}
@@ -911,11 +913,11 @@ export function IntelligenceScreen({
                   <div
                     key={trader.rank}
                     onClick={() => setSelectedDetailView({ type: 'trader', item: trader })}
-                    className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                    className="p-3.5 rounded-2xl border border-border/60 bg-card hover:border-primary/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-sm"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {/* Rank Number */}
-                      <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
+                      <span className="font-mono text-xs font-bold text-muted-foreground shrink-0 w-5">
                         {String(trader.rank).padStart(2, '0')}
                       </span>
 
@@ -936,25 +938,25 @@ export function IntelligenceScreen({
                             strokeDasharray={`${trader.score}, 100`}
                           />
                         </svg>
-                        <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
+                        <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-foreground">
                           {trader.score}
                         </span>
                       </div>
 
                       {/* Trader Handle & Metrics */}
                       <div className="space-y-0.5 truncate">
-                        <h4 className="font-mono text-xs font-bold text-white truncate">{trader.fullEns}</h4>
+                        <h4 className="font-mono text-xs font-bold text-foreground truncate">{trader.fullEns}</h4>
                         <div className="flex items-center gap-2 font-mono text-[11px]">
                           <span className="text-emerald-400 font-bold">ROI {trader.roi}</span>
-                          <span className="text-slate-400 font-medium">WR {trader.winRate}%</span>
+                          <span className="text-muted-foreground font-medium">WR {trader.winRate}%</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Right Column: Category Specialty */}
                     <div className="text-right font-mono shrink-0">
-                      <span className="text-[10px] text-slate-500 font-semibold block">{trader.topCategory}</span>
-                      <span className="text-xs font-bold text-slate-300 block">{trader.categoryPct}%</span>
+                      <span className="text-[10px] text-muted-foreground font-semibold block">{trader.topCategory}</span>
+                      <span className="text-xs font-bold text-foreground block">{trader.categoryPct}%</span>
                     </div>
                   </div>
                 ))}
@@ -968,16 +970,16 @@ export function IntelligenceScreen({
           {activeTab === 'paper' && (
             <div className="space-y-4 animate-fade-in pt-0.5">
               {/* Your Portfolio Card */}
-              <div className="p-5 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/90 via-[#141A26] to-[#0D121F] space-y-4 shadow-xl">
+              <div className="p-5 rounded-2xl border border-primary/30 bg-card space-y-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-white">Your Portfolio</h3>
+                  <h3 className="font-extrabold text-sm text-foreground">Your Portfolio</h3>
                   <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 font-mono bg-emerald-950/80 px-2.5 py-0.5 rounded-lg border border-emerald-700/60">
-                    ▲ +28.4% <span className="text-[10px] text-slate-400 font-normal">vs. starting balance</span>
+                    ▲ +28.4% <span className="text-[10px] text-muted-foreground font-normal">vs. starting balance</span>
                   </span>
                 </div>
 
                 <div className="pt-0.5">
-                  <span className="text-3xl font-black text-white font-mono">$1,284.00</span>
+                  <span className="text-3xl font-black text-foreground font-mono">$1,284.00</span>
                 </div>
 
                 {/* Vector SVG Performance Area Chart */}
@@ -1004,20 +1006,20 @@ export function IntelligenceScreen({
                 </div>
 
                 {/* Real Details Row */}
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-800/80 pt-3 text-xs font-mono">
+                <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-3 text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Starting Balance</span>
-                    <span className="font-extrabold text-white">$1,000.00</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Starting Balance</span>
+                    <span className="font-extrabold text-foreground">$1,000.00</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Trading Period</span>
-                    <span className="font-extrabold text-white">90 Days</span>
+                    <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-wider">Trading Period</span>
+                    <span className="font-extrabold text-foreground">90 Days</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setShowPaperFollowConfirmation(true)}
-                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center cursor-pointer font-mono"
+                  className="w-full py-3 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs shadow-md transition flex items-center justify-center cursor-pointer font-mono"
                 >
                   <span>Copy Strategy</span>
                 </button>
@@ -1026,8 +1028,8 @@ export function IntelligenceScreen({
               {/* Following Traders Section */}
               <div className="space-y-2.5 pt-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-white">Following Traders</h3>
-                  <span className="text-[10px] font-mono text-indigo-400 font-bold">{followingWallets.length} Active</span>
+                  <h3 className="text-xs font-bold text-foreground">Following Traders</h3>
+                  <span className="text-[10px] font-mono text-primary font-bold">{followingWallets.length} Active</span>
                 </div>
 
                 <div className="space-y-2.5">
@@ -1036,11 +1038,11 @@ export function IntelligenceScreen({
                       <div
                         key={trader.wallet}
                         onClick={() => setSelectedDetailView({ type: 'trader', item: trader })}
-                        className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                        className="p-3.5 rounded-2xl border border-border/60 bg-card hover:border-primary/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-sm"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Rank / Index Number */}
-                          <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
+                          <span className="font-mono text-xs font-bold text-muted-foreground shrink-0 w-5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
 
@@ -1061,15 +1063,15 @@ export function IntelligenceScreen({
                                 strokeDasharray={`${trader.score}, 100`}
                               />
                             </svg>
-                            <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
+                            <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-foreground">
                               {trader.score}
                             </span>
                           </div>
 
                           {/* Trader Handle & Active Period */}
                           <div className="space-y-0.5 truncate">
-                            <h4 className="font-mono text-xs font-bold text-white truncate">{trader.fullEns}</h4>
-                            <span className="text-[10px] font-mono text-slate-400 block">30D Active</span>
+                            <h4 className="font-mono text-xs font-bold text-foreground truncate">{trader.fullEns}</h4>
+                            <span className="text-[10px] font-mono text-muted-foreground block">30D Active</span>
                           </div>
                         </div>
 
@@ -1081,24 +1083,11 @@ export function IntelligenceScreen({
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 rounded-2xl bg-[#141A26] border border-slate-800 text-center font-mono text-xs text-slate-400 space-y-1">
-                      <p className="font-bold text-white">No Traders Followed Yet</p>
-                      <p className="text-[11px] text-slate-400">Tap "+ Follow" on any trader in the Traders tab to start auto-copying.</p>
+                    <div className="p-4 rounded-2xl bg-card border border-border/60 text-center font-mono text-xs text-muted-foreground space-y-1 shadow-sm">
+                      <p className="font-bold text-foreground">No Traders Followed Yet</p>
+                      <p className="text-[11px] text-muted-foreground">Tap "+ Follow" on any trader in the Traders tab to start auto-copying.</p>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Portfolio Protection Card */}
-              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-start gap-3">
-                <div className="p-1.5 rounded-xl bg-indigo-600/30 text-indigo-400 shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div className="space-y-0.5 text-xs">
-                  <h4 className="font-extrabold text-white">Automated Copy Management</h4>
-                  <p className="text-[11px] text-slate-300 leading-snug">
-                    Your portfolio automatically copies top-performing whale positions in real-time with customizable risk parameters.
-                  </p>
                 </div>
               </div>
             </div>
@@ -1113,24 +1102,24 @@ export function IntelligenceScreen({
         <div className="absolute inset-0 z-[110] flex items-end justify-center bg-black/80 backdrop-blur-md animate-fade-in p-0 overflow-hidden">
           <div className="absolute inset-0" onClick={() => setShowPaperFollowConfirmation(false)} />
 
-          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-6 shadow-2xl animate-slide-up space-y-3.5 max-h-[calc(85vh-92px)] overflow-hidden">
-            <div className="w-10 h-1 bg-slate-600/60 rounded-full mx-auto -mt-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
+          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl border-t border-border/80 bg-card text-foreground p-5 pb-6 shadow-2xl animate-slide-up space-y-3.5 max-h-[calc(85vh-92px)] overflow-hidden">
+            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto -mt-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
               <div>
-                <h3 className="text-sm font-extrabold text-white">Copy Strategy</h3>
-                <span className="text-[10px] font-mono text-slate-400">Position copying parameters</span>
+                <h3 className="text-sm font-extrabold text-foreground">Copy Strategy</h3>
+                <span className="text-[10px] font-mono text-muted-foreground">Position copying parameters</span>
               </div>
-              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-slate-400 hover:text-white cursor-pointer p-1">
+              <button onClick={() => setShowPaperFollowConfirmation(false)} className="text-muted-foreground hover:text-foreground cursor-pointer p-1">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Target Trader Header (Text-only, Synchronized with Selected Trader) */}
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between font-mono">
-              <span className="text-xs text-slate-400 font-medium">Target Trader:</span>
-              <span className="text-xs font-black text-white">
+            <div className="p-3 rounded-xl bg-secondary/30 border border-border/60 flex items-center justify-between font-mono">
+              <span className="text-xs text-muted-foreground font-medium">Target Trader:</span>
+              <span className="text-xs font-black text-foreground">
                 {selectedDetailView?.item?.fullEns || selectedDetailView?.item?.wallet || '0x72F...9A3'}
               </span>
             </div>
@@ -1138,50 +1127,50 @@ export function IntelligenceScreen({
             {/* Configuration Inputs */}
             <div className="space-y-2.5 font-mono text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Starting balance</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
+                <span className="text-muted-foreground font-medium">Starting balance</span>
+                <div className="flex items-center bg-secondary/40 border border-border/60 rounded-lg px-2.5 py-1">
+                  <span className="text-muted-foreground mr-1">$</span>
                   <input
                     type="number"
                     value={paperBalanceInput}
                     onChange={(e) => setPaperBalanceInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                    className="w-20 bg-transparent text-right font-bold text-foreground outline-none text-xs"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Copy amount per trade</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
+                <span className="text-muted-foreground font-medium">Copy amount per trade</span>
+                <div className="flex items-center bg-secondary/40 border border-border/60 rounded-lg px-2.5 py-1">
+                  <span className="text-muted-foreground mr-1">$</span>
                   <input
                     type="number"
                     value={paperCopySizeInput}
                     onChange={(e) => setPaperCopySizeInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                    className="w-20 bg-transparent text-right font-bold text-foreground outline-none text-xs"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Maximum per trade</span>
-                <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
-                  <span className="text-slate-500 mr-1">$</span>
+                <span className="text-muted-foreground font-medium">Maximum per trade</span>
+                <div className="flex items-center bg-secondary/40 border border-border/60 rounded-lg px-2.5 py-1">
+                  <span className="text-muted-foreground mr-1">$</span>
                   <input
                     type="number"
                     value={paperMaxPerTradeInput}
                     onChange={(e) => setPaperMaxPerTradeInput(parseFloat(e.target.value) || 0)}
-                    className="w-20 bg-transparent text-right font-bold text-white outline-none text-xs"
+                    className="w-20 bg-transparent text-right font-bold text-foreground outline-none text-xs"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Markets</span>
+                <span className="text-muted-foreground font-medium">Markets</span>
                 <select
                   value={paperCategoryInput}
                   onChange={(e) => setPaperCategoryInput(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-white font-bold text-xs outline-none cursor-pointer"
+                  className="bg-secondary/40 border border-border/60 rounded-lg px-2.5 py-1 text-foreground font-bold text-xs outline-none cursor-pointer"
                 >
                   <option value="All">All Categories</option>
                   <option value="Crypto">Crypto</option>
@@ -1203,14 +1192,14 @@ export function IntelligenceScreen({
                   setShowPaperFollowConfirmation(false)
                   setActiveTab('paper')
                 }}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono font-black text-xs shadow-lg transition cursor-pointer"
+                className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-mono font-black text-xs shadow-md transition cursor-pointer"
               >
                 Confirm Copy Strategy
               </button>
 
               <button
                 onClick={() => setShowPaperFollowConfirmation(false)}
-                className="w-full py-1.5 text-center text-xs font-mono font-semibold text-slate-400 hover:text-white cursor-pointer"
+                className="w-full py-1.5 text-center text-xs font-mono font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 Cancel
               </button>

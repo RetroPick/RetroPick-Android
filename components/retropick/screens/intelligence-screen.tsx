@@ -1073,10 +1073,10 @@ export function IntelligenceScreen({
       {/* COPY STRATEGY BOTTOM SHEET MODAL */}
       {/* ========================================================================= */}
       {showPaperFollowConfirmation && (
-        <div className="absolute inset-0 z-[110] flex items-end justify-center bg-black/75 backdrop-blur-sm animate-fade-in p-0">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-0 overflow-hidden">
           <div className="absolute inset-0" onClick={() => setShowPaperFollowConfirmation(false)} />
 
-          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-5 shadow-2xl animate-slide-up space-y-3.5">
+          <div className="relative z-10 w-full rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-8 shadow-2xl animate-slide-up space-y-3.5 max-h-none">
             <div className="w-10 h-1 bg-slate-600/60 rounded-full mx-auto -mt-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
 
             {/* Modal Header */}
@@ -1090,10 +1090,12 @@ export function IntelligenceScreen({
               </button>
             </div>
 
-            {/* Target Trader Header (Text-only, No Image/Emoji) */}
+            {/* Target Trader Header (Text-only, Synchronized with Selected Trader) */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between font-mono">
               <span className="text-xs text-slate-400 font-medium">Target Trader:</span>
-              <span className="text-xs font-black text-white">{selectedDetailView?.item?.fullEns || selectedDetailView?.item?.wallet || '0x72F...9A3'}</span>
+              <span className="text-xs font-black text-white">
+                {selectedDetailView?.item?.fullEns || selectedDetailView?.item?.wallet || '0x72F...9A3'}
+              </span>
             </div>
 
             {/* Configuration Inputs */}

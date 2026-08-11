@@ -869,13 +869,6 @@ export function IntelligenceScreen({
           {/* ========================================================================= */}
           {activeTab === 'traders' && (
             <div className="space-y-3 animate-fade-in pt-0.5">
-              {/* Header Title */}
-              <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1 pb-0.5">
-                <span>LEADERBOARD</span>
-                <span>·</span>
-                <span>SMART SCORE</span>
-              </div>
-
               <div className="space-y-2.5">
                 {LEADERBOARD_TRADERS.map((trader) => (
                   <div

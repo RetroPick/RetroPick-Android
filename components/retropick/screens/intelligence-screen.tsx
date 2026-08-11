@@ -1021,94 +1021,64 @@ export function IntelligenceScreen({
                 </button>
               </div>
 
-              {/* Following Traders Section (No View All link) */}
+              {/* Following Traders Section */}
               <div className="space-y-2.5 pt-1">
                 <h3 className="text-xs font-bold text-white">Following Traders</h3>
 
                 <div className="space-y-2.5">
-                  {/* Trader 1 */}
-                  <div
-                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[0] })}
-                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
-                          👑
-                        </div>
-                        <div>
-                          <span className="font-mono text-xs font-bold text-white block">0x72F...9A3</span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-                            High Score
+                  {[
+                    { trader: LEADERBOARD_TRADERS[0], period: '90D Simulation', returnPct: '▲ +28.4%', profit: '+$284' },
+                    { trader: LEADERBOARD_TRADERS[1], period: '30D Simulation', returnPct: '▲ +12.7%', profit: '+$127' },
+                    { trader: LEADERBOARD_TRADERS[2], period: '90D Simulation', returnPct: '▲ +18.2%', profit: '+$182' },
+                    { trader: LEADERBOARD_TRADERS[3], period: '60D Simulation', returnPct: '▲ +34.1%', profit: '+$341' },
+                  ].map((item, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedDetailView({ type: 'trader', item: item.trader })}
+                      className="p-3.5 rounded-2xl border border-slate-800/90 bg-[#141A26] hover:border-indigo-500/40 transition-all cursor-pointer flex items-center justify-between gap-3 shadow-md"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Rank / Index Number */}
+                        <span className="font-mono text-xs font-bold text-slate-500 shrink-0 w-5">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+
+                        {/* Emerald Ring Circular Score */}
+                        <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+                          <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#1E293B"
+                              strokeWidth="2.8"
+                            />
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#10B981"
+                              strokeWidth="2.8"
+                              strokeDasharray={`${item.trader.score}, 100`}
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center font-mono text-xs font-black text-white">
+                            {item.trader.score}
                           </span>
                         </div>
-                      </div>
-                      <div className="text-right font-mono">
-                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +28.4%</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">+$284</span>
-                      </div>
-                    </div>
 
-                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
-                      <p>90D Simulation</p>
-                    </div>
-                  </div>
-
-                  {/* Trader 2 */}
-                  <div
-                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[1] || LEADERBOARD_TRADERS[0] })}
-                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
-                          🐋
-                        </div>
-                        <div>
-                          <span className="font-mono text-xs font-bold text-white block">0x1A2...B4C</span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-                            Smart Money
-                          </span>
+                        {/* Trader Handle & Simulation Period */}
+                        <div className="space-y-0.5 truncate">
+                          <h4 className="font-mono text-xs font-bold text-white truncate">{item.trader.fullEns}</h4>
+                          <span className="text-[10px] font-mono text-slate-400 block">{item.period}</span>
                         </div>
                       </div>
-                      <div className="text-right font-mono">
-                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +12.7%</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">+$127</span>
+
+                      {/* Right Column: Return % and Profit $ */}
+                      <div className="text-right font-mono shrink-0">
+                        <span className="text-xs font-extrabold text-emerald-400 block">{item.returnPct}</span>
+                        <span className="text-[10px] font-bold text-emerald-400 block">{item.profit}</span>
                       </div>
                     </div>
-
-                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
-                      <p>30D Simulation</p>
-                    </div>
-                  </div>
-
-                  {/* Trader 3 */}
-                  <div
-                    onClick={() => setSelectedDetailView({ type: 'trader', item: LEADERBOARD_TRADERS[2] || LEADERBOARD_TRADERS[0] })}
-                    className="p-4 rounded-2xl border border-slate-800 bg-[#141A26] hover:border-indigo-500/40 transition cursor-pointer space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-sm">
-                          🌌
-                        </div>
-                        <div>
-                          <span className="font-mono text-xs font-bold text-white block">0x49B...12C</span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-                            Top Trader
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right font-mono">
-                        <span className="text-xs font-extrabold text-emerald-400 block">▲ +18.2%</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">+$182</span>
-                      </div>
-                    </div>
-
-                    <div className="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-800/60">
-                      <p>90D Simulation</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 

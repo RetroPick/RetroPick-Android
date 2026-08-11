@@ -442,8 +442,23 @@ export function IntelligenceScreen({
     }
   }
 
+  // Prevent background scrolling when Copy Strategy modal is open (matching login/limit modal behavior)
+  useEffect(() => {
+    if (showPaperFollowConfirmation) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [showPaperFollowConfirmation])
+
   return (
-    <div className="relative flex flex-col h-full bg-[#0B0F17] animate-fade-up px-4 pb-32 pt-2 space-y-3.5 text-foreground overflow-y-auto min-h-0 no-scrollbar">
+    <div className={cn(
+      "relative flex flex-col h-full bg-[#0B0F17] animate-fade-up px-4 pb-32 pt-2 space-y-3.5 text-foreground min-h-0 no-scrollbar",
+      showPaperFollowConfirmation ? "overflow-hidden" : "overflow-y-auto"
+    )}>
       
       {/* ========================================================================= */}
       {/* DETAIL VIEW SCREEN (TRIGGERED WHEN TAPPING AN ITEM FROM LIST) */}
@@ -1070,13 +1085,13 @@ export function IntelligenceScreen({
       )}
 
       {/* ========================================================================= */}
-      {/* COPY STRATEGY BOTTOM SHEET MODAL */}
+      {/* COPY STRATEGY BOTTOM SHEET MODAL (LOCKED NON-SCROLLABLE LIKE LOGIN MODAL) */}
       {/* ========================================================================= */}
       {showPaperFollowConfirmation && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-0 overflow-hidden">
+        <div className="absolute inset-0 z-[110] flex items-end justify-center bg-black/80 backdrop-blur-md animate-fade-in p-0 overflow-hidden">
           <div className="absolute inset-0" onClick={() => setShowPaperFollowConfirmation(false)} />
 
-          <div className="relative z-10 w-full rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-8 shadow-2xl animate-slide-up space-y-3.5 max-h-none">
+          <div className="relative z-10 w-full mb-[92px] rounded-t-3xl border-t border-indigo-500/50 bg-[#121722] text-white p-5 pb-6 shadow-2xl animate-slide-up space-y-3.5 max-h-[calc(85vh-92px)] overflow-hidden">
             <div className="w-10 h-1 bg-slate-600/60 rounded-full mx-auto -mt-1 cursor-pointer" onClick={() => setShowPaperFollowConfirmation(false)} />
 
             {/* Modal Header */}

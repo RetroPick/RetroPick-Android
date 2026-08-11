@@ -939,19 +939,14 @@ export function IntelligenceScreen({
             <div className="space-y-4 animate-fade-in pt-0.5">
               {/* Your Portfolio Card */}
               <div className="p-5 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/90 via-[#141A26] to-[#0D121F] space-y-4 shadow-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-lg text-indigo-300">
-                    👛
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-sm text-white">Your Portfolio</h3>
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 font-mono">
-                      ▲ +28.4% <span className="text-[10px] text-slate-400 font-normal">vs. starting balance</span>
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-sm text-white">Your Portfolio</h3>
+                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 font-mono bg-emerald-950/80 px-2.5 py-0.5 rounded-lg border border-emerald-700/60">
+                    ▲ +28.4% <span className="text-[10px] text-slate-400 font-normal">vs. starting balance</span>
+                  </span>
                 </div>
 
-                <div className="pt-1">
+                <div className="pt-0.5">
                   <span className="text-3xl font-black text-white font-mono">$1,284.00</span>
                 </div>
 
@@ -992,9 +987,9 @@ export function IntelligenceScreen({
 
                 <button
                   onClick={() => setShowPaperFollowConfirmation(true)}
-                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center cursor-pointer font-mono"
                 >
-                  <span>▶ Copy Strategy</span>
+                  <span>Copy Strategy</span>
                 </button>
               </div>
 

@@ -379,9 +379,31 @@ export function IntelligenceScreen({
 }: {
   onSelectMarket?: (marketId: string) => void
 }) {
-  const [activeTab, setActiveTab] = useState<'whales' | 'traders' | 'paper'>('whales')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [followingWallets, setFollowingWallets] = useState<string[]>(['0x72F...9A3'])
+  const [followingWallets, setFollowingWallets] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('retropick_following_wallets')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed)) return parsed
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    return ['0x72F...9A3']
+  })
+
+  // Persist followingWallets state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('retropick_following_wallets', JSON.stringify(followingWallets))
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }, [followingWallets])
   const [selectedTraderProfile, setSelectedTraderProfile] = useState<any>(null)
   const [showQuickBacktestModal, setShowQuickBacktestModal] = useState(false)
   const [showPaperFollowConfirmation, setShowPaperFollowConfirmation] = useState(false)

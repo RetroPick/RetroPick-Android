@@ -280,6 +280,13 @@ export function AppShell() {
     setWalletAddress('')
     setWalletProvider('')
     setUserEmail('')
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('retropick_following_wallets')
+      } catch (e) {
+        console.error(e)
+      }
+    }
   }
 
   const handleProvisionWallet = (type: 'embedded' | 'external', provider?: string) => {

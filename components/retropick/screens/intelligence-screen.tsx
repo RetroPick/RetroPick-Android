@@ -201,9 +201,11 @@ const TRENDING_MARKETS = [
 ]
 
 export function IntelligenceScreen({
-  onSelectMarket
+  onSelectMarket,
+  onEnableWhaleAlerts
 }: {
   onSelectMarket?: (marketId: string) => void
+  onEnableWhaleAlerts: () => Promise<boolean>
 }) {
   // Navigation Sub-Tabs: Whales | Smart Money | Following | Paper | Search
   const [activeTab, setActiveTab] = useState<'whales' | 'smart_money' | 'following' | 'paper' | 'search'>('whales')
@@ -234,7 +236,7 @@ export function IntelligenceScreen({
   const [paperCategoryInput, setPaperCategoryInput] = useState<string>('All')
 
   // Whale Alerts Settings
-  const [whaleAlertsEnabled, setWhaleAlertsEnabled] = useState(true)
+  const [whaleAlertsEnabled, setWhaleAlertsEnabled] = useState(false)
   const [followedWalletsAlertsEnabled, setFollowedWalletsAlertsEnabled] = useState(true)
   const [minTradeThreshold, setMinTradeThreshold] = useState(5000)
   const [minSmartScore, setMinSmartScore] = useState(70)
@@ -270,6 +272,17 @@ export function IntelligenceScreen({
       setAlertedMarkets(prev => prev.filter(m => m !== marketId))
     } else {
       setAlertedMarkets(prev => [...prev, marketId])
+    }
+  }
+
+  const toggleWhaleAlerts = async () => {
+    if (whaleAlertsEnabled) {
+      setWhaleAlertsEnabled(false)
+      return
+    }
+
+    if (await onEnableWhaleAlerts()) {
+      setWhaleAlertsEnabled(true)
     }
   }
 
@@ -1179,7 +1192,7 @@ export function IntelligenceScreen({
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground">Whale Alerts</span>
                   <button
-                    onClick={() => setWhaleAlertsEnabled(!whaleAlertsEnabled)}
+                    onClick={toggleWhaleAlerts}
                     className={cn(
                       "w-10 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer",
                       whaleAlertsEnabled ? "bg-indigo-600" : "bg-secondary"

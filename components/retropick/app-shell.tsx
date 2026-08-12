@@ -23,6 +23,7 @@ import { SplashScreen } from './screens/splash-screen'
 
 import { fetchLivePolymarketMarkets, classifyMarketCategory, extractSubTags } from '@/lib/polymarket-service'
 import { StorageService } from '@/lib/storage-service'
+import { requestWhaleAlertNotificationPermission } from '@/lib/whale-alert-notifications'
 
 const TITLES: Record<Tab, string> = {
   explore: 'Explore',
@@ -492,6 +493,7 @@ export function AppShell() {
                       {tab === 'intelligence' && (
                         <IntelligenceScreen 
                           onSelectMarket={openMarket}
+                          onEnableWhaleAlerts={requestWhaleAlertNotificationPermission}
                         />
                       )}
                       {tab === 'portfolio' && (

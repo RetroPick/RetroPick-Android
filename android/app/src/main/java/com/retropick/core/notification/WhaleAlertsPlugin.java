@@ -25,8 +25,11 @@ public class WhaleAlertsPlugin extends Plugin {
 
     @PluginMethod
     public void requestNotificationPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                || getPermissionState(NOTIFICATION_PERMISSION_ALIAS) == PermissionState.GRANTED) {
+        boolean permissionGranted = getPermissionState(NOTIFICATION_PERMISSION_ALIAS) == PermissionState.GRANTED;
+        if (!WhaleAlertNotificationPolicy.shouldRequestRuntimePermission(
+                Build.VERSION.SDK_INT,
+                permissionGranted
+        )) {
             resolvePermissionResult(call);
             return;
         }
@@ -44,11 +47,11 @@ public class WhaleAlertsPlugin extends Plugin {
     }
 
     private void resolvePermissionResult(PluginCall call) {
+        boolean permissionGranted = getPermissionState(NOTIFICATION_PERMISSION_ALIAS) == PermissionState.GRANTED;
         JSObject result = new JSObject();
         result.put(
                 "granted",
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                        || getPermissionState(NOTIFICATION_PERMISSION_ALIAS) == PermissionState.GRANTED
+                WhaleAlertNotificationPolicy.canPostWhaleAlert(Build.VERSION.SDK_INT, permissionGranted)
         );
         call.resolve(result);
     }

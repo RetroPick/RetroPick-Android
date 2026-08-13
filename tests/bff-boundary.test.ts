@@ -309,12 +309,69 @@ test('realtime applies bid and ask deltas in canonical order and removes zero-si
   assert.equal(client.getState(), 'SYNCHRONIZED')
 })
 
+test('realtime removes levels for every canonical zero-equivalent delta size', () => {
+  for (const [index, size] of ['0', '0.0', '0.00', `0.${'0'.repeat(128)}`].entries()) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+    const books: Array<{ bids: Array<{ price: string; size: string }>; asks: Array<{ price: string; size: string }>; deliveryCounter: number }> = []
+    client.onOrderBook((book) => books.push(book))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open()
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `snapshot-${index}`, payload: {
+      hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+      bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+    } }))
+    socket.message(dataEnvelope('orderbook.delta', 2, { eventId: `zero-${index}`, payload: canonicalOrderBookDeltaPayload({
+      NextHash: 'hash-2', Timestamp: '2026-08-13T12:00:00.500Z', Size: size,
+    }) }))
+
+    assert.deepEqual(books[1], {
+      marketId: 'market-1', tokenId: 'token-1', bids: [], asks: [{ price: '0.6', size: '3' }],
+      observedAt: '2026-08-13T12:00:00.125Z', publishedAt: '2026-08-13T12:00:00.250Z',
+      streamEpoch: 1, deliveryCounter: 2,
+    }, `Size=${size}`)
+
+    socket.message(dataEnvelope('orderbook.delta', 3, { eventId: `after-zero-${index}`, payload: canonicalOrderBookDeltaPayload({
+      BaseHash: 'hash-2', NextHash: 'hash-3', Timestamp: '2026-08-13T12:00:00.600Z', Price: '0.3', Size: '1',
+    }) }))
+    assert.deepEqual(books.map((book) => book.deliveryCounter), [1, 2, 3], `Size=${size}`)
+    assert.deepEqual(books[2].bids, [{ price: '0.3', size: '1' }], `Size=${size}`)
+    assert.equal(client.getState(), 'SYNCHRONIZED', `Size=${size}`)
+  }
+})
+
+test('realtime retains canonical nonzero delta sizes when updating or inserting levels', () => {
+  for (const [index, size] of ['0.10', '0.0001', '1.0'].entries()) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+    const books: Array<{ bids: Array<{ price: string; size: string }>; deliveryCounter: number }> = []
+    client.onOrderBook((book) => books.push(book))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open()
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `nonzero-snapshot-${index}`, payload: {
+      hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+      bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+    } }))
+    const price = index === 0 ? '0.4' : '0.3'
+    socket.message(dataEnvelope('orderbook.delta', 2, { eventId: `nonzero-${index}`, payload: canonicalOrderBookDeltaPayload({
+      NextHash: 'hash-2', Timestamp: '2026-08-13T12:00:00.500Z', Price: price, Size: size,
+    }) }))
+
+    assert.equal(books[1].deliveryCounter, 2, `Size=${size}`)
+    assert.deepEqual(books[1].bids.find((level) => level.price === price), { price, size }, `Size=${size}`)
+    assert.equal(client.getState(), 'SYNCHRONIZED', `Size=${size}`)
+  }
+})
+
 test('realtime requires resync for canonical delta hash mismatch or malformed fields', () => {
   const invalidPayloads = [
     canonicalOrderBookDeltaPayload({ BaseHash: 'wrong-hash' }),
     canonicalOrderBookDeltaPayload({ Side: 'BUY' }),
     canonicalOrderBookDeltaPayload({ Price: '0.4e0' }),
     canonicalOrderBookDeltaPayload({ Size: '-1' }),
+    canonicalOrderBookDeltaPayload({ Size: '0e0' }),
+    canonicalOrderBookDeltaPayload({ Size: '00' }),
+    canonicalOrderBookDeltaPayload({ Size: '01' }),
     canonicalOrderBookDeltaPayload({ Timestamp: '2026-02-30T12:00:00Z' }),
     canonicalOrderBookDeltaPayload({ Side: 'bid', Price: '0.7', Size: '1' }),
   ]

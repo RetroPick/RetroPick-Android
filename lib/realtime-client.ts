@@ -215,7 +215,7 @@ export class RealtimeClient {
       }
       const levels = delta.side === 'bid' ? reconciliation.bids : reconciliation.asks
       const next = levels.filter((level) => this.compareDecimal(level.price, delta.price) !== 0)
-      if (delta.size !== '0') next.push({ price: delta.price, size: delta.size })
+      if (this.compareDecimal(delta.size, '0') !== 0) next.push({ price: delta.price, size: delta.size })
       const sorted = this.sortLevels(next, delta.side)
       const bids = delta.side === 'bid' ? sorted : reconciliation.bids
       const asks = delta.side === 'ask' ? sorted : reconciliation.asks

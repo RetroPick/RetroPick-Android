@@ -33,6 +33,12 @@ type Options = {
   reconnectDelayMs?: number
 }
 type Subscription = { tokenId: string; marketId: string }
+type SubscriptionReconciliation = {
+  state: 'SNAPSHOT_LOADING' | 'SYNCHRONIZED' | 'RESYNC_REQUIRED'
+  epoch: number | null
+  counter: number
+  seenEventIds: Set<string>
+}
 type Envelope = {
   schemaVersion: string; eventId: string; eventType: string; marketId: string; tokenId: string
   streamEpoch: number; deliveryCounter: number; observedAt: number; requestId: string; payload: any
@@ -41,12 +47,10 @@ type Envelope = {
 export class RealtimeClient {
   private ws: WebSocketLike | null = null
   private state: ReconcilerState = 'UNINITIALIZED'
-  private epoch: number | null = null
-  private counter = 0
   private latencyMs: number | null = null
   private reconnectPending = false
   private readonly subscriptions = new Map<string, Subscription>()
-  private readonly seenEventIds = new Set<string>()
+  private readonly reconciliation = new Map<string, SubscriptionReconciliation>()
   private readonly stateListeners = new Set<(state: ReconcilerState, latencyMs: number | null) => void>()
   private readonly signalListeners = new Set<(signal: SignalEnvelope) => void>()
   private readonly orderBookListeners = new Set<(data: OrderBookPayload) => void>()
@@ -57,21 +61,19 @@ export class RealtimeClient {
 
   public connect() {
     if (this.ws) return
-    this.setState('SNAPSHOT_LOADING')
+    if (this.subscriptions.size > 0) this.setState('SNAPSHOT_LOADING')
     try {
       const factory = this.options.socketFactory ?? ((url: string) => new WebSocket(url) as unknown as WebSocketLike)
       const socket = factory(this.options.url)
       this.ws = socket
       socket.onopen = () => {
         this.reconnectPending = false
-        this.epoch = null
-        this.counter = 0
-        this.seenEventIds.clear()
-        this.setState('SNAPSHOT_LOADING')
+        this.subscriptions.forEach((_subscription, key) => this.reconciliation.set(key, this.newReconciliation()))
+        this.refreshState()
         this.subscriptions.forEach((subscription) => this.sendSubscription('subscribe', subscription))
       }
       socket.onmessage = (event) => this.handleMessage(event.data)
-      socket.onerror = () => this.setState('DEGRADED')
+      socket.onerror = () => this.setDegraded()
       socket.onclose = () => { this.detachSocket(); this.setState('RESYNC_REQUIRED'); this.scheduleReconnect() }
     } catch { this.detachSocket(); this.setState('DEGRADED'); this.scheduleReconnect() }
   }
@@ -80,7 +82,10 @@ export class RealtimeClient {
 
   public subscribeToken(tokenId: string, marketId: string) {
     const subscription = { tokenId, marketId }
-    this.subscriptions.set(`${marketId}:${tokenId}`, subscription)
+    const key = this.subscriptionKey(marketId, tokenId)
+    this.subscriptions.set(key, subscription)
+    this.reconciliation.set(key, this.newReconciliation())
+    if (this.ws?.readyState === 1) this.refreshState()
     if (this.ws?.readyState === 1) this.sendSubscription('subscribe', subscription)
   }
 
@@ -89,6 +94,8 @@ export class RealtimeClient {
     if (!key) return
     const subscription = this.subscriptions.get(key)!
     this.subscriptions.delete(key)
+    this.reconciliation.delete(key)
+    if (this.ws?.readyState === 1) this.refreshState()
     if (this.ws?.readyState === 1) this.sendSubscription('unsubscribe', subscription)
   }
 
@@ -109,26 +116,36 @@ export class RealtimeClient {
 
   private handleMessage(raw: string) {
     const envelope = this.parseEnvelope(raw)
-    if (!envelope) { this.setState('DEGRADED'); return }
-    if (this.seenEventIds.has(envelope.eventId)) return
-    if (this.epoch !== null && envelope.streamEpoch < this.epoch) return
-    if (this.epoch === null || envelope.streamEpoch > this.epoch) {
-      if (envelope.eventType !== 'orderbook.snapshot') { this.setState('RESYNC_REQUIRED'); return }
-      this.epoch = envelope.streamEpoch
-      this.counter = 0
-      this.seenEventIds.clear()
+    if (!envelope) { this.setDegraded(); return }
+    const reconciliation = this.reconciliation.get(this.subscriptionKey(envelope.marketId, envelope.tokenId))
+    if (!reconciliation || reconciliation.seenEventIds.has(envelope.eventId)) return
+    if (reconciliation.epoch !== null && envelope.streamEpoch < reconciliation.epoch) return
+    if (reconciliation.epoch === null || envelope.streamEpoch > reconciliation.epoch) {
+      if (envelope.eventType !== 'orderbook.snapshot') {
+        reconciliation.state = 'RESYNC_REQUIRED'
+        this.refreshState()
+        return
+      }
+      reconciliation.epoch = envelope.streamEpoch
+      reconciliation.counter = 0
+      reconciliation.seenEventIds.clear()
     }
-    if (envelope.deliveryCounter <= this.counter) return
-    if (envelope.deliveryCounter !== this.counter + 1) { this.setState('RESYNC_REQUIRED'); return }
-    if (this.state !== 'SYNCHRONIZED' && envelope.eventType !== 'orderbook.snapshot') return
+    if (envelope.deliveryCounter <= reconciliation.counter) return
+    if (envelope.deliveryCounter !== reconciliation.counter + 1) {
+      reconciliation.state = 'RESYNC_REQUIRED'
+      this.refreshState()
+      return
+    }
+    if (reconciliation.state !== 'SYNCHRONIZED' && envelope.eventType !== 'orderbook.snapshot') return
 
-    this.counter = envelope.deliveryCounter
-    this.seenEventIds.add(envelope.eventId)
+    reconciliation.counter = envelope.deliveryCounter
+    reconciliation.seenEventIds.add(envelope.eventId)
     this.latencyMs = Math.max(0, this.now() - envelope.observedAt)
     if (envelope.eventType === 'orderbook.snapshot' || envelope.eventType === 'orderbook.delta') {
       const bids = this.levels(envelope.payload.bids); const asks = this.levels(envelope.payload.asks)
-      if (!bids || !asks) { this.setState('DEGRADED'); return }
-      this.setState('SYNCHRONIZED')
+      if (!bids || !asks) { this.setDegraded(); return }
+      reconciliation.state = 'SYNCHRONIZED'
+      this.refreshState()
       this.orderBookListeners.forEach((fn) => fn({ marketId: envelope.marketId, tokenId: envelope.tokenId, bids, asks, observedAt: envelope.observedAt, streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter, requestId: envelope.requestId }))
     }
   }
@@ -147,6 +164,21 @@ export class RealtimeClient {
   }
   private detachSocket() { if (this.ws) { this.ws.onopen = null; this.ws.onmessage = null; this.ws.onerror = null; this.ws.onclose = null }; this.ws = null }
   private now() { return (this.options.now ?? Date.now)() }
+  private subscriptionKey(marketId: string, tokenId: string) { return `${marketId}:${tokenId}` }
+  private newReconciliation(): SubscriptionReconciliation {
+    return { state: 'SNAPSHOT_LOADING', epoch: null, counter: 0, seenEventIds: new Set<string>() }
+  }
+  private refreshState() {
+    const states = [...this.reconciliation.values()].map((value) => value.state)
+    if (states.length === 0) this.setState('UNINITIALIZED')
+    else if (states.some((state) => state === 'RESYNC_REQUIRED')) this.setState('RESYNC_REQUIRED')
+    else if (states.some((state) => state !== 'SYNCHRONIZED')) this.setState('SNAPSHOT_LOADING')
+    else this.setState('SYNCHRONIZED')
+  }
+  private setDegraded() {
+    const hasResyncRequired = [...this.reconciliation.values()].some((value) => value.state === 'RESYNC_REQUIRED')
+    this.setState(hasResyncRequired ? 'RESYNC_REQUIRED' : 'DEGRADED')
+  }
   private setState(state: ReconcilerState) { this.state = state; this.stateListeners.forEach((fn) => fn(state, this.latencyMs)) }
   public getState() { return this.state }
   public getLatency() { return this.latencyMs }

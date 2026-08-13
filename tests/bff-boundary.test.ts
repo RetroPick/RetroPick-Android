@@ -106,11 +106,17 @@ class FakeSocket implements WebSocketLike {
   disconnect() { this.readyState = 3; this.onclose?.() }
 }
 
-function envelope(counter: number, epoch = 1, eventId = `event-${counter}`) {
+function envelope(
+  counter: number,
+  epoch = 1,
+  eventId = `event-${counter}`,
+  marketId = 'market-1',
+  tokenId = 'token-1',
+) {
   return {
     schemaVersion: '1.0', eventId, eventType: counter === 1 ? 'orderbook.snapshot' : 'orderbook.delta',
-    marketId: 'market-1', tokenId: 'token-1', streamEpoch: epoch, deliveryCounter: counter,
-    observedAt: 900, requestId: `req-${counter}`, payload: { bids: [], asks: [] },
+    marketId, tokenId, streamEpoch: epoch, deliveryCounter: counter,
+    observedAt: 900, requestId: `req-${marketId}-${tokenId}-${counter}`, payload: { bids: [], asks: [] },
   }
 }
 
@@ -142,7 +148,7 @@ test('realtime reconnects, resubscribes, rejects malformed/stale/duplicate/out-o
   assert.equal(client.getState(), 'RESYNC_REQUIRED')
   assert.equal(books.length, 1)
   sockets[0].message('{bad json')
-  assert.notEqual(client.getState(), 'SYNCHRONIZED')
+  assert.equal(client.getState(), 'RESYNC_REQUIRED')
 
   sockets[0].disconnect()
   assert.equal(reconnects.length, 1)
@@ -150,6 +156,76 @@ test('realtime reconnects, resubscribes, rejects malformed/stale/duplicate/out-o
   sockets[1].open()
   assert.match(sockets[1].sent[0], /subscribe/)
   sockets[1].message(envelope(1, 2, 'new-epoch'))
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+})
+
+test('realtime reconciles equal epoch and counters independently per subscription', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  const books: string[] = []
+  client.onOrderBook((book) => books.push(`${book.marketId}:${book.tokenId}:${book.deliveryCounter}`))
+  client.subscribeToken('token-1', 'market-1')
+  client.subscribeToken('token-2', 'market-1')
+  client.connect()
+  socket.open()
+
+  socket.message(envelope(1, 7, 'shared-event', 'market-1', 'token-1'))
+  assert.equal(client.getState(), 'SNAPSHOT_LOADING')
+  socket.message(envelope(1, 7, 'shared-event', 'market-1', 'token-2'))
+
+  assert.deepEqual(books, ['market-1:token-1:1', 'market-1:token-2:1'])
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+})
+
+test('realtime empty subscription set remains uninitialized while connected', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  client.connect()
+  assert.equal(client.getState(), 'UNINITIALIZED')
+  socket.open()
+
+  assert.equal(client.getState(), 'UNINITIALIZED')
+})
+
+test('realtime isolates gaps, stale events, reconnect resets, and exact unsubscribe state', () => {
+  const sockets: FakeSocket[] = []
+  const reconnects: Array<() => void> = []
+  const client = new RealtimeClient({
+    url: production.NEXT_PUBLIC_BFF_WS_URL,
+    socketFactory: () => { const socket = new FakeSocket(); sockets.push(socket); return socket },
+    scheduleReconnect: (fn) => { reconnects.push(fn); return 1 },
+  })
+  const books: string[] = []
+  client.onOrderBook((book) => books.push(`${book.tokenId}:${book.streamEpoch}:${book.deliveryCounter}`))
+  client.subscribeToken('token-1', 'market-1')
+  client.subscribeToken('token-2', 'market-1')
+  client.connect()
+  sockets[0].open()
+  sockets[0].message(envelope(1, 2, 'snapshot', 'market-1', 'token-1'))
+  sockets[0].message(envelope(1, 2, 'snapshot', 'market-1', 'token-2'))
+
+  sockets[0].message(envelope(3, 2, 'gap', 'market-1', 'token-1'))
+  assert.equal(client.getState(), 'RESYNC_REQUIRED')
+  sockets[0].message(envelope(2, 1, 'stale', 'market-1', 'token-2'))
+  sockets[0].message(envelope(2, 2, 'delta', 'market-1', 'token-2'))
+  sockets[0].message(envelope(2, 2, 'delta', 'market-1', 'token-2'))
+  assert.deepEqual(books, ['token-1:2:1', 'token-2:2:1', 'token-2:2:2'])
+  assert.equal(client.getState(), 'RESYNC_REQUIRED')
+
+  sockets[0].disconnect()
+  reconnects[0]()
+  sockets[1].open()
+  assert.equal(sockets[1].sent.filter((message) => message.includes('subscribe')).length, 2)
+  sockets[1].message(envelope(1, 2, 'snapshot', 'market-1', 'token-1'))
+  assert.equal(client.getState(), 'SNAPSHOT_LOADING')
+  sockets[1].message(envelope(1, 2, 'snapshot', 'market-1', 'token-2'))
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+
+  client.unsubscribeToken('token-1', 'market-1')
+  assert.match(sockets[1].sent.at(-1)!, /unsubscribe/)
+  sockets[1].message(envelope(2, 2, 'removed-token', 'market-1', 'token-1'))
+  sockets[1].message(envelope(2, 2, 'remaining-token', 'market-1', 'token-2'))
+  assert.equal(books.at(-1), 'token-2:2:2')
   assert.equal(client.getState(), 'SYNCHRONIZED')
 })
 

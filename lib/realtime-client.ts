@@ -43,6 +43,10 @@ type SubscriptionReconciliation = {
   epoch: number | null
   counter: number
   seenEventIds: Set<string>
+  bids: OrderBookLevel[]
+  asks: OrderBookLevel[]
+  bookHash: string | null
+  bookTimestamp: string | null
 }
 type ControlEventType = 'hello' | 'subscribed' | 'unsubscribed' | 'error'
 type ControlEnvelope = {
@@ -181,27 +185,54 @@ export class RealtimeClient {
     if (reconciliation.state !== 'SYNCHRONIZED' && envelope.eventType !== 'orderbook.snapshot') return
 
     const observedAt = Date.parse(envelope.observedAt)
-    reconciliation.counter = envelope.deliveryCounter
-    reconciliation.seenEventIds.add(envelope.eventId)
-    this.latencyMs = Math.max(0, this.now() - observedAt)
-    if (envelope.eventType === 'orderbook.snapshot' || envelope.eventType === 'orderbook.delta') {
+    if (envelope.eventType === 'orderbook.snapshot') {
       const bids = this.levels(envelope.payload.bids); const asks = this.levels(envelope.payload.asks)
-      if (!bids || !asks) { this.setDegraded(); return }
+      const hash = envelope.payload.hash
+      const timestamp = envelope.payload.timestamp
+      if (!bids || !asks || typeof hash !== 'string' || !hash || !this.isRFC3339(timestamp)) {
+        this.requireResync(reconciliation)
+        return
+      }
+      reconciliation.bids = this.sortLevels(bids, 'bid')
+      reconciliation.asks = this.sortLevels(asks, 'ask')
+      reconciliation.bookHash = hash
+      reconciliation.bookTimestamp = timestamp
       reconciliation.state = 'SYNCHRONIZED'
-      this.refreshState()
-      this.orderBookListeners.forEach((fn) => fn({
-        marketId: envelope.marketId, tokenId: envelope.tokenId, bids, asks,
-        observedAt: envelope.observedAt, publishedAt: envelope.publishedAt,
-        streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter,
-      }))
+      this.acceptOrderBook(envelope, reconciliation, observedAt)
+    } else if (envelope.eventType === 'orderbook.delta') {
+      const delta = this.delta(envelope.payload)
+      if (!delta || delta.baseHash !== reconciliation.bookHash ||
+        !reconciliation.bookTimestamp || Date.parse(delta.timestamp) <= Date.parse(reconciliation.bookTimestamp)) {
+        this.requireResync(reconciliation)
+        return
+      }
+      const levels = delta.side === 'bid' ? reconciliation.bids : reconciliation.asks
+      const next = levels.filter((level) => this.compareDecimal(level.price, delta.price) !== 0)
+      if (delta.size !== '0') next.push({ price: delta.price, size: delta.size })
+      const sorted = this.sortLevels(next, delta.side)
+      const bids = delta.side === 'bid' ? sorted : reconciliation.bids
+      const asks = delta.side === 'ask' ? sorted : reconciliation.asks
+      if (bids.length > 0 && asks.length > 0 && this.compareDecimal(bids[0].price, asks[0].price) >= 0) {
+        this.requireResync(reconciliation)
+        return
+      }
+      if (delta.side === 'bid') reconciliation.bids = sorted
+      else reconciliation.asks = sorted
+      reconciliation.bookHash = delta.nextHash
+      reconciliation.bookTimestamp = delta.timestamp
+      this.acceptOrderBook(envelope, reconciliation, observedAt)
     } else if (envelope.eventType === 'trade.executed') {
+      this.acceptEnvelope(envelope, reconciliation, observedAt)
       this.tradeListeners.forEach((fn) => fn({
         marketId: envelope.marketId, tokenId: envelope.tokenId,
         observedAt: envelope.observedAt, publishedAt: envelope.publishedAt,
         streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter, payload: envelope.payload,
       }))
     } else if (envelope.eventType === 'signal.created' || envelope.eventType === 'signal.retracted') {
+      this.acceptEnvelope(envelope, reconciliation, observedAt)
       this.signalListeners.forEach((fn) => fn(envelope as SignalEnvelope))
+    } else {
+      this.acceptEnvelope(envelope, reconciliation, observedAt)
     }
   }
 
@@ -211,7 +242,51 @@ export class RealtimeClient {
       if (!this.isRecord(level)) return { price: '', size: '' }
       return { price: String(level.price ?? ''), size: String(level.size ?? '') }
     })
-    return levels.every((level) => level.price && level.size && Number.isFinite(Number(level.price)) && Number.isFinite(Number(level.size))) ? levels : null
+    return levels.every((level) => this.isDecimal(level.price) && this.isDecimal(level.size)) ? levels : null
+  }
+
+  private delta(value: Record<string, unknown>) {
+    const { BaseHash, NextHash, Timestamp, Side, Price, Size } = value
+    if (typeof BaseHash !== 'string' || !BaseHash || typeof NextHash !== 'string' || !NextHash ||
+      !this.isRFC3339(Timestamp) || (Side !== 'bid' && Side !== 'ask') ||
+      typeof Price !== 'string' || !this.isDecimal(Price) || !this.isProbability(Price) ||
+      typeof Size !== 'string' || !this.isDecimal(Size)) return null
+    return {
+      baseHash: BaseHash, nextHash: NextHash, timestamp: Timestamp,
+      side: Side as 'bid' | 'ask', price: Price, size: Size,
+    }
+  }
+  private acceptEnvelope(envelope: DataEnvelope, reconciliation: SubscriptionReconciliation, observedAt: number) {
+    reconciliation.counter = envelope.deliveryCounter
+    reconciliation.seenEventIds.add(envelope.eventId)
+    this.latencyMs = Math.max(0, this.now() - observedAt)
+  }
+  private acceptOrderBook(envelope: DataEnvelope, reconciliation: SubscriptionReconciliation, observedAt: number) {
+    this.acceptEnvelope(envelope, reconciliation, observedAt)
+    this.refreshState()
+    this.orderBookListeners.forEach((fn) => fn({
+      marketId: envelope.marketId, tokenId: envelope.tokenId,
+      bids: reconciliation.bids.map((level) => ({ ...level })), asks: reconciliation.asks.map((level) => ({ ...level })),
+      observedAt: envelope.observedAt, publishedAt: envelope.publishedAt,
+      streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter,
+    }))
+  }
+  private requireResync(reconciliation: SubscriptionReconciliation) {
+    reconciliation.state = 'RESYNC_REQUIRED'
+    this.refreshState()
+  }
+  private isDecimal(value: string) { return /^(0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value) }
+  private isProbability(value: string) { return this.compareDecimal(value, '1') <= 0 }
+  private compareDecimal(left: string, right: string) {
+    const [li, lf = ''] = left.split('.'); const [ri, rf = ''] = right.split('.')
+    if (li.length !== ri.length) return li.length < ri.length ? -1 : 1
+    if (li !== ri) return li < ri ? -1 : 1
+    const width = Math.max(lf.length, rf.length)
+    const lp = lf.padEnd(width, '0'); const rp = rf.padEnd(width, '0')
+    return lp === rp ? 0 : lp < rp ? -1 : 1
+  }
+  private sortLevels(levels: OrderBookLevel[], side: 'bid' | 'ask') {
+    return [...levels].sort((left, right) => this.compareDecimal(left.price, right.price) * (side === 'bid' ? -1 : 1))
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) }
@@ -238,7 +313,10 @@ export class RealtimeClient {
   private now() { return (this.options.now ?? Date.now)() }
   private subscriptionKey(marketId: string, tokenId: string) { return `${marketId}:${tokenId}` }
   private newReconciliation(): SubscriptionReconciliation {
-    return { state: 'SNAPSHOT_LOADING', epoch: null, counter: 0, seenEventIds: new Set<string>() }
+    return {
+      state: 'SNAPSHOT_LOADING', epoch: null, counter: 0, seenEventIds: new Set<string>(),
+      bids: [], asks: [], bookHash: null, bookTimestamp: null,
+    }
   }
   private refreshState() {
     const states = [...this.reconciliation.values()].map((value) => value.state)

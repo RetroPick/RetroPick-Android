@@ -5,7 +5,7 @@ import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
 import { fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
-import { controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
+import { canonicalOrderBookDeltaPayload, controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
 
 const production = {
   NEXT_PUBLIC_BFF_HTTP_URL: 'https://bff.retropick.example/api/v1',
@@ -171,6 +171,91 @@ test('realtime accepts canonical controls and schema-version-1 data without requ
     observedAt: '2026-08-13T12:00:00.125Z', publishedAt: '2026-08-13T12:00:00.250Z',
     streamEpoch: 1, deliveryCounter: 1,
   }])
+})
+
+test('realtime applies a canonical backend delta after its snapshot', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  const books: Array<{ bids: Array<{ price: string; size: string }>; asks: Array<{ price: string; size: string }> }> = []
+  const states: string[] = []
+  client.onOrderBook((book) => books.push(book))
+  client.onStateChange((state) => states.push(state))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect()
+  socket.open()
+
+  socket.message(dataEnvelope('orderbook.snapshot', 1, {
+    payload: {
+      hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+      bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+    },
+  }))
+  socket.message(dataEnvelope('orderbook.delta', 2, {
+    payload: canonicalOrderBookDeltaPayload({ Size: '4' }),
+  }))
+
+  assert.equal(books.length, 2, 'canonical backend orderbook.delta should be mapped/applied')
+  assert.deepEqual(books[1], {
+    marketId: 'market-1', tokenId: 'token-1',
+    bids: [{ price: '0.4', size: '4' }], asks: [{ price: '0.6', size: '3' }],
+    observedAt: '2026-08-13T12:00:00.125Z', publishedAt: '2026-08-13T12:00:00.250Z',
+    streamEpoch: 1, deliveryCounter: 2,
+  })
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+  assert.equal(states.includes('DEGRADED'), false)
+})
+
+test('realtime applies bid and ask deltas in canonical order and removes zero-size levels', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  const books: Array<{ bids: Array<{ price: string; size: string }>; asks: Array<{ price: string; size: string }> }> = []
+  client.onOrderBook((book) => books.push(book))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect(); socket.open()
+  socket.message(dataEnvelope('orderbook.snapshot', 1, { payload: {
+    hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+    bids: [{ price: '0.3', size: '1' }, { price: '0.4', size: '2' }],
+    asks: [{ price: '0.7', size: '1' }, { price: '0.6', size: '3' }],
+  } }))
+  socket.message(dataEnvelope('orderbook.delta', 2, { payload: canonicalOrderBookDeltaPayload({
+    NextHash: 'hash-2', Timestamp: '2026-08-13T12:00:00.500Z', Side: 'bid', Price: '0.5', Size: '5',
+  }) }))
+  socket.message(dataEnvelope('orderbook.delta', 3, { payload: canonicalOrderBookDeltaPayload({
+    BaseHash: 'hash-2', NextHash: 'hash-3', Timestamp: '2026-08-13T12:00:00.600Z', Side: 'ask', Price: '0.55', Size: '6',
+  }) }))
+  socket.message(dataEnvelope('orderbook.delta', 4, { payload: canonicalOrderBookDeltaPayload({
+    BaseHash: 'hash-3', NextHash: 'hash-4', Timestamp: '2026-08-13T12:00:00.700Z', Side: 'bid', Price: '0.4', Size: '0',
+  }) }))
+
+  assert.deepEqual(books.at(-1)?.bids, [{ price: '0.5', size: '5' }, { price: '0.3', size: '1' }])
+  assert.deepEqual(books.at(-1)?.asks, [{ price: '0.55', size: '6' }, { price: '0.6', size: '3' }, { price: '0.7', size: '1' }])
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+})
+
+test('realtime requires resync for canonical delta hash mismatch or malformed fields', () => {
+  const invalidPayloads = [
+    canonicalOrderBookDeltaPayload({ BaseHash: 'wrong-hash' }),
+    canonicalOrderBookDeltaPayload({ Side: 'BUY' }),
+    canonicalOrderBookDeltaPayload({ Price: '0.4e0' }),
+    canonicalOrderBookDeltaPayload({ Size: '-1' }),
+    canonicalOrderBookDeltaPayload({ Timestamp: '2026-02-30T12:00:00Z' }),
+    canonicalOrderBookDeltaPayload({ Side: 'bid', Price: '0.7', Size: '1' }),
+  ]
+  for (const payload of invalidPayloads) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+    const deliveries: number[] = []
+    client.onOrderBook((book) => deliveries.push(book.deliveryCounter))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open()
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { payload: {
+      hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+      bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+    } }))
+    socket.message(dataEnvelope('orderbook.delta', 2, { payload }))
+    assert.equal(client.getState(), 'RESYNC_REQUIRED', JSON.stringify(payload))
+    assert.deepEqual(deliveries, [1], JSON.stringify(payload))
+  }
 })
 
 test('realtime recognizes every canonical data event type and payload shape', () => {

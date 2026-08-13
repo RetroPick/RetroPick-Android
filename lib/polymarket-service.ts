@@ -294,62 +294,17 @@ export function extractSubTags(
   return result
 }
 
-const BFF_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
-
-export async function fetchLivePolymarketMarkets(): Promise<Market[]> {
-  // 1. Try Go BFF backend endpoint from monorepo-base
+export async function fetchLivePolymarketMarkets(bffUrl = process.env.NEXT_PUBLIC_BFF_HTTP_URL): Promise<Market[]> {
+  if (!bffUrl) return []
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 1800)
-    const bffRes = await fetch(`${BFF_API_URL}/markets`, { signal: controller.signal })
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    const response = await fetch(`${bffUrl.replace(/\/$/, '')}/markets`, { signal: controller.signal, headers: { Accept: 'application/json' } })
     clearTimeout(timeoutId)
-    if (bffRes.ok) {
-      const bffData = await bffRes.json()
-      const rawBffMarkets = Array.isArray(bffData) ? bffData : bffData?.data || bffData?.markets || []
-      if (rawBffMarkets.length > 0) {
-        console.log('[RetroPick] Successfully fetched markets from Go BFF Backend')
-        const bffMapped = rawBffMarkets.map((m: any, idx: number): Market | null => {
-          const qLower = (m.question || '').toLowerCase()
-          const cat = classifyMarketCategory(m.question || '', m.category || '')
-          const yesVal = Math.round(typeof m.yes === 'number' ? m.yes : (parseFloat(m.yesPrice || '0.5') * 100))
-          return {
-            id: m.id || String(idx),
-            question: m.question || 'Untitled Market',
-            category: cat,
-            marketType: m.marketType || 'UP_OR_DOWN',
-            tags: extractSubTags(m.question || '', cat),
-            yes: yesVal,
-            volume: m.volume || '$1.2m',
-            liquidity: m.liquidity || '$450k',
-            participants: m.participants || '1,420 Traders',
-            timeLeft: m.timeLeft || 'Ends Dec 31',
-            trend: yesVal >= 50 ? 'up' : 'down',
-            chart: m.chart || [48, 50, 52, 51, 55, 58, 60, yesVal],
-            verified: true,
-            icon: m.icon,
-            image: m.image,
-            options: m.options
-          }
-        }).filter((m: any): m is Market => m !== null)
-        if (bffMapped.length > 0) return bffMapped
-      }
-    }
-  } catch (_) {
-    // Go BFF unavailable, fallback to direct Polymarket API
-  }
-
-  try {
-    const targetUrl = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=40&order=volume&ascending=false'
-    const response = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl))
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
+    if (!response.ok) return []
     const data = await response.json()
-    const rawMarkets = Array.isArray(data) ? data : data?.markets || []
-
-    const mapped = rawMarkets.map((m: any, idx: number): Market | null => {
+    const rawMarkets = Array.isArray(data) ? data : data?.data || data?.markets || []
+    return rawMarkets.map((m: any, idx: number): Market | null => {
       // 1. Parse question and exclude political, pardon, or election markets
       const qLower = (m.question || '').toLowerCase()
       const originalCat = (m.category || '').toLowerCase()
@@ -457,17 +412,9 @@ export async function fetchLivePolymarketMarkets(): Promise<Market[]> {
         }))
       }
 
-      // 10. Generate semi-realistic history chart ending at current yesPercentage
-      const chartPoints: number[] = []
-      let tempVal = 50
-      const diff = yesPercentage - 50
-      for (let i = 0; i < 24; i++) {
-        tempVal += diff / 24 + Math.sin(i * 0.7 + idx) * 4
-        chartPoints.push(Math.max(8, Math.min(92, Math.round(tempVal))))
-      }
-      chartPoints.push(yesPercentage)
+      const chartPoints = Array.isArray(m.chart) ? m.chart.filter((point: unknown) => typeof point === 'number') : []
 
-      // 11. Generate simulated icon labels
+      // 10. Generate icon labels from server data.
       let icon = undefined
       if (qLower.includes('bitcoin') || qLower.includes('btc')) icon = 'BTC'
       else if (qLower.includes('ethereum') || qLower.includes('eth')) icon = 'ETH'
@@ -497,11 +444,8 @@ export async function fetchLivePolymarketMarkets(): Promise<Market[]> {
         image: officialImage,
         options
       }
-    })
-
-    return mapped.filter((m: any): m is Market => m !== null)
+    }).filter((m: Market | null): m is Market => m !== null)
   } catch (error) {
-    console.error('Failed to fetch live Polymarket markets:', error)
     return []
   }
 }

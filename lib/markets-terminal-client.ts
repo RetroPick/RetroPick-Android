@@ -1,155 +1,135 @@
 'use client'
 
-/**
- * Markets Read Terminal Client
- * Implements Phase 1.2 System Design DTOs according to docs/MARKETS_TERMINAL.md
- * OpenAPI Schema contract: schemas/openapi/markets-v1.yaml v1.1.0
- */
-
 export type FreshnessState = 'fresh' | 'stale' | 'resyncing' | 'degraded' | 'unavailable'
 
-export interface MarketHealth {
+export interface TransportHealth {
+  availability: 'available' | 'degraded' | 'unavailable'
+  source: 'Go BFF Projection' | 'unavailable'
+  observedAt: string | null
+  latencyMs: number | null
+  requestId: string | null
+}
+
+export interface MarketHealth extends TransportHealth {
   marketId: string
-  spread: string
-  spreadStatus: 'tight' | 'normal' | 'wide'
-  depthScore: number
-  liquidityRating: 'OPTIMAL' | 'MODERATE' | 'LOW'
+  spread: string | null
+  spreadStatus: 'tight' | 'normal' | 'wide' | 'unavailable'
+  depthScore: number | null
+  liquidityRating: 'OPTIMAL' | 'MODERATE' | 'LOW' | 'UNAVAILABLE'
   ok: boolean
   degraded: boolean
-  observedAt: string
 }
 
 export interface CapabilitiesResponse {
-  features: {
-    realtime: boolean
-    trading: boolean
-    intelligence: boolean
-  }
-  version: string
-  environment: string
+  features: { realtime: boolean; trading: boolean; intelligence: boolean }
+  version: string | null
+  environment: string | null
+  health: TransportHealth
 }
 
 export interface EligibilityResponse {
   eligible: boolean
   jurisdiction: string
   reason?: string
+  health: TransportHealth
 }
 
 export interface DataProvenance {
   marketId: string
-  source: 'Polymarket Gamma API' | 'Polymarket CLOB V2' | 'Go BFF Projection'
+  source: 'Go BFF Projection' | 'unavailable'
   freshnessState: FreshnessState
-  etag: string
-  requestId: string
-  observedAt: string
-  staleSeconds: number
+  etag: string | null
+  requestId: string | null
+  observedAt: string | null
+  staleSeconds: number | null
+  latencyMs: number | null
 }
 
-const BFF_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+type ClientOptions = { httpUrl: string; fetchImpl?: typeof fetch; timeoutMs?: number; now?: () => number }
 
-class MarketsTerminalClient {
+const unavailableHealth = (requestId: string | null = null): TransportHealth => ({
+  availability: 'unavailable', source: 'unavailable', observedAt: null, latencyMs: null, requestId,
+})
+
+export class MarketsTerminalClient {
+  private readonly httpUrl: string
+  private readonly fetchImpl: typeof fetch
+  private readonly timeoutMs: number
+  private readonly now: () => number
   private capabilitiesCache: CapabilitiesResponse | null = null
   private eligibilityCache: EligibilityResponse | null = null
+  private provenance = new Map<string, DataProvenance>()
+  private health = new Map<string, MarketHealth>()
 
-  public getMarketHealth(marketId: string, currentSpread?: number): MarketHealth {
-    const rawSpread = currentSpread !== undefined ? currentSpread : Math.random() * 0.03 + 0.005
-    const spreadPct = (rawSpread * 100).toFixed(2)
-    const depthScore = Math.floor(75 + Math.random() * 24)
+  constructor(options: ClientOptions) {
+    this.httpUrl = options.httpUrl.replace(/\/$/, '')
+    this.fetchImpl = options.fetchImpl ?? fetch
+    this.timeoutMs = options.timeoutMs ?? 5000
+    this.now = options.now ?? Date.now
+  }
 
-    return {
-      marketId,
-      spread: `${spreadPct}%`,
-      spreadStatus: rawSpread < 0.015 ? 'tight' : rawSpread < 0.03 ? 'normal' : 'wide',
-      depthScore,
-      liquidityRating: depthScore > 85 ? 'OPTIMAL' : depthScore > 70 ? 'MODERATE' : 'LOW',
-      ok: true,
-      degraded: false,
-      observedAt: new Date().toISOString(),
-    }
+  private async get(path: string): Promise<{ data: any; health: TransportHealth; headers: Headers }> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs)
+    const started = this.now()
+    try {
+      const response = await this.fetchImpl(`${this.httpUrl}${path}`, { signal: controller.signal, headers: { Accept: 'application/json' } })
+      const requestId = response.headers.get('x-request-id')
+      if (!response.ok) throw Object.assign(new Error(`BFF HTTP ${response.status}`), { requestId })
+      const data = await response.json()
+      const observedAt = data.observedAt ?? response.headers.get('x-observed-at')
+      return { data, headers: response.headers, health: {
+        availability: data.degraded ? 'degraded' : 'available', source: 'Go BFF Projection',
+        observedAt: typeof observedAt === 'string' ? observedAt : new Date(this.now()).toISOString(),
+        latencyMs: Math.max(0, this.now() - started), requestId: data.requestId ?? requestId,
+      } }
+    } finally { clearTimeout(timer) }
   }
 
   public async fetchCapabilitiesFromBff(): Promise<CapabilitiesResponse> {
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1500)
-      const res = await fetch(`${BFF_API_URL}/markets/capabilities`, { signal: controller.signal })
-      clearTimeout(timeoutId)
-      if (res.ok) {
-        const data = await res.json()
-        this.capabilitiesCache = {
-          features: {
-            realtime: data.features?.orderbook_read ?? true,
-            trading: data.trading ?? true,
-            intelligence: data.intelligence ?? true,
-          },
-          version: data.version || 'v1.3.0-go-bff',
-          environment: data.source || 'production-bff',
-        }
-        return this.capabilitiesCache
-      }
-    } catch (_) {}
-    return this.getCapabilities()
-  }
-
-  public getCapabilities(): CapabilitiesResponse {
-    if (!this.capabilitiesCache) {
+      const { data, health } = await this.get('/markets/capabilities')
       this.capabilitiesCache = {
         features: {
-          realtime: true,
-          trading: true,
-          intelligence: true,
-        },
-        version: 'v1.3.0-bff',
-        environment: 'production-bff',
+          realtime: data.features?.realtime === true || data.features?.orderbook_read === true,
+          trading: data.features?.trading === true || data.trading === true,
+          intelligence: data.features?.intelligence === true || data.intelligence === true,
+        }, version: typeof data.version === 'string' ? data.version : null,
+        environment: typeof data.environment === 'string' ? data.environment : null, health,
       }
+    } catch (error: any) {
+      this.capabilitiesCache = { features: { realtime: false, trading: false, intelligence: false }, version: null, environment: null, health: unavailableHealth(error?.requestId ?? null) }
     }
     return this.capabilitiesCache
   }
 
-  public async fetchEligibilityFromBff(): Promise<EligibilityResponse> {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1500)
-      const res = await fetch(`${BFF_API_URL}/markets/eligibility`, { signal: controller.signal })
-      clearTimeout(timeoutId)
-      if (res.ok) {
-        const data = await res.json()
-        this.eligibilityCache = {
-          eligible: data.eligible ?? true,
-          jurisdiction: data.jurisdiction || 'ALLOWED_NON_RESTRICTED',
-          reason: data.reason,
-        }
-        return this.eligibilityCache
-      }
-    } catch (_) {}
-    return this.getEligibility()
+  public getCapabilities(): CapabilitiesResponse {
+    return this.capabilitiesCache ?? { features: { realtime: false, trading: false, intelligence: false }, version: null, environment: null, health: unavailableHealth() }
   }
 
-  public getEligibility(): EligibilityResponse {
-    if (!this.eligibilityCache) {
+  public async fetchEligibilityFromBff(): Promise<EligibilityResponse> {
+    try {
+      const { data, health } = await this.get('/markets/eligibility')
       this.eligibilityCache = {
-        eligible: true,
-        jurisdiction: 'ALLOWED_NON_RESTRICTED',
+        eligible: data.eligible === true,
+        jurisdiction: typeof data.jurisdiction === 'string' ? data.jurisdiction : 'UNKNOWN',
+        reason: typeof data.reason === 'string' ? data.reason : undefined, health,
       }
+    } catch (error: any) {
+      this.eligibilityCache = { eligible: false, jurisdiction: 'UNKNOWN', reason: 'Eligibility unavailable', health: unavailableHealth(error?.requestId ?? null) }
     }
     return this.eligibilityCache
   }
 
-  public getMarketProvenance(marketId: string, fromBff: boolean = false): DataProvenance {
-    const hashSeed = Math.abs(
-      marketId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    ).toString(16)
+  public getEligibility(): EligibilityResponse {
+    return this.eligibilityCache ?? { eligible: false, jurisdiction: 'UNKNOWN', reason: 'Eligibility not verified', health: unavailableHealth() }
+  }
 
-    return {
-      marketId,
-      source: fromBff ? 'Go BFF Projection' : 'Polymarket CLOB V2',
-      freshnessState: 'fresh',
-      etag: `W/"${hashSeed}-p12-v130"`,
-      requestId: `req-${Math.random().toString(36).substring(2, 9)}`,
-      observedAt: new Date().toISOString(),
-      staleSeconds: 0,
-    }
+  public getMarketHealth(marketId: string): MarketHealth {
+    return this.health.get(marketId) ?? { ...unavailableHealth(), marketId, spread: null, spreadStatus: 'unavailable', depthScore: null, liquidityRating: 'UNAVAILABLE', ok: false, degraded: true }
+  }
+
+  public getMarketProvenance(marketId: string): DataProvenance {
+    return this.provenance.get(marketId) ?? { marketId, source: 'unavailable', freshnessState: 'unavailable', etag: null, requestId: null, observedAt: null, staleSeconds: null, latencyMs: null }
   }
 }
-
-export const terminalClient = new MarketsTerminalClient()

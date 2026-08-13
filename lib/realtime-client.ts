@@ -1,318 +1,157 @@
 'use client'
 
-/**
- * Realtime Client & Order-book Reconciler State Machine
- * Implements Polymarket / RetroPick BFF WebSocket Protocol according to docs/REALTIME_INTELLIGENCE.md
- */
-
-export type ReconcilerState =
-  | 'UNINITIALIZED'
-  | 'SNAPSHOT_LOADING'
-  | 'SYNCHRONIZED'
-  | 'DEGRADED'
-  | 'RESYNC_REQUIRED'
-
-export interface SignalEnvelope {
-  schemaVersion: string
-  eventId: string
-  eventType: 'signal.created' | 'signal.retracted'
-  source: string
-  marketId: string
-  tokenId?: string
-  signalType: 'price_move' | 'liquidity_change' | 'whale_trade'
-  title: string
-  description: string
-  side?: 'YES' | 'NO'
-  amount?: string
-  price?: string
-  timeAgo: string
-  observedAt: number
-}
-
-export interface OrderBookLevel {
-  price: string
-  size: string
-}
-
+export type ReconcilerState = 'UNINITIALIZED' | 'SNAPSHOT_LOADING' | 'SYNCHRONIZED' | 'DEGRADED' | 'RESYNC_REQUIRED'
+export interface OrderBookLevel { price: string; size: string }
 export interface OrderBookPayload {
-  marketId: string
-  tokenId: string
-  bids: OrderBookLevel[]
-  asks: OrderBookLevel[]
-  timestamp: number
-  snapshotHash?: string
-  streamEpoch: number
-  deliveryCounter: number
+  marketId: string; tokenId: string; bids: OrderBookLevel[]; asks: OrderBookLevel[]
+  observedAt: number; streamEpoch: number; deliveryCounter: number; requestId: string
 }
-
 export interface TradeExecutedPayload {
-  marketId: string
-  tokenId: string
-  side: 'YES' | 'NO'
-  price: string
-  size: string
-  user: string
-  timestamp: number
+  marketId: string; tokenId: string; side: 'YES' | 'NO'; price: string; size: string
+  user: string; observedAt: number; streamEpoch: number; deliveryCounter: number; requestId: string
+}
+export interface SignalEnvelope {
+  schemaVersion: string; eventId: string; eventType: 'signal.created' | 'signal.retracted'; source: string
+  marketId: string; tokenId?: string; signalType: 'price_move' | 'liquidity_change' | 'whale_trade'
+  title: string; description: string; side?: 'YES' | 'NO'; amount?: string; price?: string; timeAgo: string; observedAt: number
+}
+export interface WebSocketLike {
+  readyState: number
+  onopen: (() => void) | null
+  onmessage: ((event: { data: string }) => void) | null
+  onerror: (() => void) | null
+  onclose: (() => void) | null
+  send(data: string): void
+  close(): void
 }
 
-type StateChangeListener = (state: ReconcilerState, latencyMs: number) => void
-type SignalListener = (signal: SignalEnvelope) => void
-type OrderBookListener = (data: OrderBookPayload) => void
-type TradeListener = (trade: TradeExecutedPayload) => void
+type Options = {
+  url: string
+  socketFactory?: (url: string) => WebSocketLike
+  scheduleReconnect?: (fn: () => void, delayMs: number) => unknown
+  now?: () => number
+  reconnectDelayMs?: number
+}
+type Subscription = { tokenId: string; marketId: string }
+type Envelope = {
+  schemaVersion: string; eventId: string; eventType: string; marketId: string; tokenId: string
+  streamEpoch: number; deliveryCounter: number; observedAt: number; requestId: string; payload: any
+}
 
-class RealtimeClient {
-  private ws: WebSocket | null = null
+export class RealtimeClient {
+  private ws: WebSocketLike | null = null
   private state: ReconcilerState = 'UNINITIALIZED'
-  private streamEpoch = 0
-  private deliveryCounter = 0
-  private latencyMs = 18
-  private pingInterval: any = null
-  private demoTimer: any = null
-  private subscribedTokens = new Set<string>()
+  private epoch: number | null = null
+  private counter = 0
+  private latencyMs: number | null = null
+  private reconnectPending = false
+  private readonly subscriptions = new Map<string, Subscription>()
+  private readonly seenEventIds = new Set<string>()
+  private readonly stateListeners = new Set<(state: ReconcilerState, latencyMs: number | null) => void>()
+  private readonly signalListeners = new Set<(signal: SignalEnvelope) => void>()
+  private readonly orderBookListeners = new Set<(data: OrderBookPayload) => void>()
+  private readonly tradeListeners = new Set<(trade: TradeExecutedPayload) => void>()
+  private readonly options: Options
 
-  private stateListeners: Set<StateChangeListener> = new Set()
-  private signalListeners: Set<SignalListener> = new Set()
-  private orderBookListeners: Set<OrderBookListener> = new Set()
-  private tradeListeners: Set<TradeListener> = new Set()
+  constructor(options: Options) { this.options = options }
 
-  constructor() {
-    // Initial state
-  }
-
-  public connect(url: string = 'wss://ws-subscriptions-clob.polymarket.com/ws/market') {
-    if (this.state === 'SYNCHRONIZED' || this.ws) return
-
+  public connect() {
+    if (this.ws) return
     this.setState('SNAPSHOT_LOADING')
-
     try {
-      this.ws = new WebSocket(url)
-
-      this.ws.onopen = () => {
-        this.streamEpoch += 1
-        this.deliveryCounter = 0
-        this.setState('SYNCHRONIZED')
-        this.startHeartbeat()
-
-        // Re-subscribe token active
-        this.subscribedTokens.forEach((tokenId) => {
-          this.sendSubscribeCommand(tokenId)
-        })
+      const factory = this.options.socketFactory ?? ((url: string) => new WebSocket(url) as unknown as WebSocketLike)
+      const socket = factory(this.options.url)
+      this.ws = socket
+      socket.onopen = () => {
+        this.reconnectPending = false
+        this.epoch = null
+        this.counter = 0
+        this.seenEventIds.clear()
+        this.setState('SNAPSHOT_LOADING')
+        this.subscriptions.forEach((subscription) => this.sendSubscription('subscribe', subscription))
       }
-
-      this.ws.onmessage = (event) => {
-        this.handleMessage(event.data)
-      }
-
-      this.ws.onerror = (err) => {
-        console.warn('[RealtimeClient] WS Error, switching to degraded mode:', err)
-        this.setState('DEGRADED')
-      }
-
-      this.ws.onclose = () => {
-        this.cleanupWS()
-        this.setState('RESYNC_REQUIRED')
-        // Auto reconnect fallback
-        setTimeout(() => this.connect(url), 5000)
-      }
-    } catch (e) {
-      console.warn('[RealtimeClient] Connection failed, activating Realtime Simulation:', e)
-      this.activateSimulationMode()
-    }
-
-    // Always start simulation stream to guarantee live visual ticks in preview mode
-    this.startSimulationStream()
+      socket.onmessage = (event) => this.handleMessage(event.data)
+      socket.onerror = () => this.setState('DEGRADED')
+      socket.onclose = () => { this.detachSocket(); this.setState('RESYNC_REQUIRED'); this.scheduleReconnect() }
+    } catch { this.detachSocket(); this.setState('DEGRADED'); this.scheduleReconnect() }
   }
 
-  public subscribeToken(tokenId: string, marketId: string = '') {
-    this.subscribedTokens.add(tokenId)
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.sendSubscribeCommand(tokenId)
-    }
+  public disconnect() { const socket = this.ws; this.detachSocket(); socket?.close(); this.reconnectPending = false; this.setState('UNINITIALIZED') }
+
+  public subscribeToken(tokenId: string, marketId: string) {
+    const subscription = { tokenId, marketId }
+    this.subscriptions.set(`${marketId}:${tokenId}`, subscription)
+    if (this.ws?.readyState === 1) this.sendSubscription('subscribe', subscription)
   }
 
-  public unsubscribeToken(tokenId: string) {
-    this.subscribedTokens.delete(tokenId)
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.sendUnsubscribeCommand(tokenId)
-    }
+  public unsubscribeToken(tokenId: string, marketId = '') {
+    const key = marketId ? `${marketId}:${tokenId}` : [...this.subscriptions.keys()].find((candidate) => candidate.endsWith(`:${tokenId}`))
+    if (!key) return
+    const subscription = this.subscriptions.get(key)!
+    this.subscriptions.delete(key)
+    if (this.ws?.readyState === 1) this.sendSubscription('unsubscribe', subscription)
   }
 
-  private sendSubscribeCommand(tokenId: string) {
-    const payload = JSON.stringify({
-      assets_ids: [tokenId],
-      type: 'market',
-    })
-    this.ws?.send(payload)
+  private sendSubscription(operation: 'subscribe' | 'unsubscribe', subscription: Subscription) {
+    this.ws?.send(JSON.stringify({ operation, marketId: subscription.marketId, tokenId: subscription.tokenId }))
   }
 
-  private sendUnsubscribeCommand(tokenId: string) {
-    const payload = JSON.stringify({
-      operation: 'unsubscribe',
-      assets_ids: [tokenId],
-    })
-    this.ws?.send(payload)
-  }
-
-  private handleMessage(dataRaw: string) {
+  private parseEnvelope(raw: string): Envelope | null {
     try {
-      const msg = JSON.parse(dataRaw)
-      this.deliveryCounter += 1
-      this.latencyMs = Math.floor(12 + Math.random() * 15)
+      const value = JSON.parse(raw)
+      if (!value || typeof value !== 'object' || typeof value.schemaVersion !== 'string' || typeof value.eventId !== 'string' ||
+        typeof value.eventType !== 'string' || typeof value.marketId !== 'string' || typeof value.tokenId !== 'string' ||
+        !Number.isSafeInteger(value.streamEpoch) || !Number.isSafeInteger(value.deliveryCounter) || typeof value.observedAt !== 'number' ||
+        typeof value.requestId !== 'string' || !value.payload || typeof value.payload !== 'object') return null
+      return value as Envelope
+    } catch { return null }
+  }
 
-      // Handle standard Polymarket CLOB events
-      if (msg.event_type === 'book' || msg.type === 'book') {
-        const payload: OrderBookPayload = {
-          marketId: msg.market || 'live-market',
-          tokenId: msg.asset_id || msg.token_id || '',
-          bids: (msg.bids || []).map((b: any) => ({ price: String(b.price), size: String(b.size) })),
-          asks: (msg.asks || []).map((a: any) => ({ price: String(a.price), size: String(a.size) })),
-          timestamp: Date.now(),
-          streamEpoch: this.streamEpoch,
-          deliveryCounter: this.deliveryCounter,
-        }
-        this.notifyOrderBook(payload)
-      } else if (msg.event_type === 'last_trade_price' || msg.event_type === 'price_change') {
-        const side = msg.side === 'BUY' ? 'YES' : 'NO'
-        const trade: TradeExecutedPayload = {
-          marketId: msg.market || 'live-market',
-          tokenId: msg.asset_id || '',
-          side: side,
-          price: String(msg.price || '0.50'),
-          size: String(msg.size || '100'),
-          user: '0x' + Math.random().toString(16).substring(2, 8) + '...eth',
-          timestamp: Date.now(),
-        }
-        this.notifyTrade(trade)
-      }
-    } catch {
-      // Ignore unparseable
+  private handleMessage(raw: string) {
+    const envelope = this.parseEnvelope(raw)
+    if (!envelope) { this.setState('DEGRADED'); return }
+    if (this.seenEventIds.has(envelope.eventId)) return
+    if (this.epoch !== null && envelope.streamEpoch < this.epoch) return
+    if (this.epoch === null || envelope.streamEpoch > this.epoch) {
+      if (envelope.eventType !== 'orderbook.snapshot') { this.setState('RESYNC_REQUIRED'); return }
+      this.epoch = envelope.streamEpoch
+      this.counter = 0
+      this.seenEventIds.clear()
+    }
+    if (envelope.deliveryCounter <= this.counter) return
+    if (envelope.deliveryCounter !== this.counter + 1) { this.setState('RESYNC_REQUIRED'); return }
+    if (this.state !== 'SYNCHRONIZED' && envelope.eventType !== 'orderbook.snapshot') return
+
+    this.counter = envelope.deliveryCounter
+    this.seenEventIds.add(envelope.eventId)
+    this.latencyMs = Math.max(0, this.now() - envelope.observedAt)
+    if (envelope.eventType === 'orderbook.snapshot' || envelope.eventType === 'orderbook.delta') {
+      const bids = this.levels(envelope.payload.bids); const asks = this.levels(envelope.payload.asks)
+      if (!bids || !asks) { this.setState('DEGRADED'); return }
+      this.setState('SYNCHRONIZED')
+      this.orderBookListeners.forEach((fn) => fn({ marketId: envelope.marketId, tokenId: envelope.tokenId, bids, asks, observedAt: envelope.observedAt, streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter, requestId: envelope.requestId }))
     }
   }
 
-  private startHeartbeat() {
-    if (this.pingInterval) clearInterval(this.pingInterval)
-    this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }))
-      }
-    }, 10000)
+  private levels(value: unknown): OrderBookLevel[] | null {
+    if (!Array.isArray(value)) return null
+    const levels = value.map((level: any) => ({ price: String(level?.price ?? ''), size: String(level?.size ?? '') }))
+    return levels.every((level) => level.price && level.size && Number.isFinite(Number(level.price)) && Number.isFinite(Number(level.size))) ? levels : null
   }
 
-  private cleanupWS() {
-    if (this.pingInterval) clearInterval(this.pingInterval)
-    if (this.ws) {
-      this.ws.onopen = null
-      this.ws.onmessage = null
-      this.ws.onerror = null
-      this.ws.onclose = null
-      this.ws = null
-    }
+  private scheduleReconnect() {
+    if (this.reconnectPending) return
+    this.reconnectPending = true
+    const schedule = this.options.scheduleReconnect ?? ((fn: () => void, delay: number) => setTimeout(fn, delay))
+    schedule(() => { this.reconnectPending = false; this.connect() }, this.options.reconnectDelayMs ?? 5000)
   }
-
-  private activateSimulationMode() {
-    this.setState('SYNCHRONIZED')
-  }
-
-  private startSimulationStream() {
-    if (this.demoTimer) return
-    this.demoTimer = setInterval(() => {
-      if (this.state !== 'SYNCHRONIZED') this.setState('SYNCHRONIZED')
-
-      this.deliveryCounter += 1
-      this.latencyMs = Math.floor(10 + Math.random() * 20)
-
-      // Randomly emit trade / whale alert / signal
-      const rand = Math.random()
-      if (rand > 0.65) {
-        // Emit simulated Whale or Price signal
-        const isWhale = rand > 0.88
-        const amount = isWhale
-          ? `${(Math.floor(Math.random() * 25) + 5).toFixed(1)}k USDC`
-          : `${(Math.floor(Math.random() * 800) + 100)} USDC`
-
-        const signal: SignalEnvelope = {
-          schemaVersion: 'v1.1.0',
-          eventId: 'sig-' + Math.random().toString(36).substring(2, 9),
-          eventType: 'signal.created',
-          source: 'internal/markets/signals-v1-p13',
-          marketId: 'm-live-active',
-          signalType: isWhale ? 'whale_trade' : 'price_move',
-          title: isWhale ? '🐋 WHALE ALERT DETECTED' : '⚡ RAPID PRICE MOMENTUM',
-          description: isWhale
-            ? `Smart money executed ${amount} buy order on YES outcome.`
-            : `Probability moved +${(Math.random() * 4 + 1).toFixed(1)}% in last 30s.`,
-          side: Math.random() > 0.5 ? 'YES' : 'NO',
-          amount: amount,
-          price: (0.45 + Math.random() * 0.2).toFixed(2),
-          timeAgo: 'Just now',
-          observedAt: Date.now(),
-        }
-        this.notifySignal(signal)
-      }
-
-      // Emit simulated trade ticker update
-      const trade: TradeExecutedPayload = {
-        marketId: 'm-live-active',
-        tokenId: 'token-active',
-        side: Math.random() > 0.4 ? 'YES' : 'NO',
-        price: (0.48 + Math.random() * 0.1).toFixed(2),
-        size: String(Math.floor(Math.random() * 500 + 50)),
-        user: '0x' + Math.random().toString(16).substring(2, 8) + '.eth',
-        timestamp: Date.now(),
-      }
-      this.notifyTrade(trade)
-
-      // Notify state listeners of latency & counter
-      this.stateListeners.forEach((fn) => fn(this.state, this.latencyMs))
-    }, 4000)
-  }
-
-  public getState(): ReconcilerState {
-    return this.state
-  }
-
-  public getLatency(): number {
-    return this.latencyMs
-  }
-
-  private setState(newState: ReconcilerState) {
-    this.state = newState
-    this.stateListeners.forEach((fn) => fn(this.state, this.latencyMs))
-  }
-
-  // Listener subscriptions
-  public onStateChange(fn: StateChangeListener) {
-    this.stateListeners.add(fn)
-    fn(this.state, this.latencyMs)
-    return () => this.stateListeners.delete(fn)
-  }
-
-  public onSignal(fn: SignalListener) {
-    this.signalListeners.add(fn)
-    return () => this.signalListeners.delete(fn)
-  }
-
-  public onOrderBook(fn: OrderBookListener) {
-    this.orderBookListeners.add(fn)
-    return () => this.orderBookListeners.delete(fn)
-  }
-
-  public onTrade(fn: TradeListener) {
-    this.tradeListeners.add(fn)
-    return () => this.tradeListeners.delete(fn)
-  }
-
-  private notifySignal(sig: SignalEnvelope) {
-    this.signalListeners.forEach((fn) => fn(sig))
-  }
-
-  private notifyOrderBook(ob: OrderBookPayload) {
-    this.orderBookListeners.forEach((fn) => fn(ob))
-  }
-
-  private notifyTrade(tr: TradeExecutedPayload) {
-    this.tradeListeners.forEach((fn) => fn(tr))
-  }
+  private detachSocket() { if (this.ws) { this.ws.onopen = null; this.ws.onmessage = null; this.ws.onerror = null; this.ws.onclose = null }; this.ws = null }
+  private now() { return (this.options.now ?? Date.now)() }
+  private setState(state: ReconcilerState) { this.state = state; this.stateListeners.forEach((fn) => fn(state, this.latencyMs)) }
+  public getState() { return this.state }
+  public getLatency() { return this.latencyMs }
+  public onStateChange(fn: (state: ReconcilerState, latencyMs: number | null) => void) { this.stateListeners.add(fn); fn(this.state, this.latencyMs); return () => this.stateListeners.delete(fn) }
+  public onSignal(fn: (signal: SignalEnvelope) => void) { this.signalListeners.add(fn); return () => this.signalListeners.delete(fn) }
+  public onOrderBook(fn: (data: OrderBookPayload) => void) { this.orderBookListeners.add(fn); return () => this.orderBookListeners.delete(fn) }
+  public onTrade(fn: (trade: TradeExecutedPayload) => void) { this.tradeListeners.add(fn); return () => this.tradeListeners.delete(fn) }
 }
-
-export const realtimeClient = new RealtimeClient()

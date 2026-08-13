@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+def bffHttpUrl = providers.gradleProperty("RETROPICK_BFF_HTTP_URL").orElse(providers.environmentVariable("RETROPICK_BFF_HTTP_URL")).getOrElse("")
+def bffWsUrl = providers.gradleProperty("RETROPICK_BFF_WS_URL").orElse(providers.environmentVariable("RETROPICK_BFF_WS_URL")).getOrElse("")
+def quotedBuildConfig = { value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
+
 android {
     namespace = "com.retropick.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -10,6 +14,8 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "BFF_HTTP_URL", quotedBuildConfig(bffHttpUrl)
+        buildConfigField "String", "BFF_WS_URL", quotedBuildConfig(bffWsUrl)
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -17,11 +23,18 @@ android {
         }
     }
     buildTypes {
+        debug {
+            buildConfigField "boolean", "DEMO_SIMULATION", "false"
+        }
         release {
+            buildConfigField "boolean", "DEMO_SIMULATION", "false"
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 

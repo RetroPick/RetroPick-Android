@@ -266,7 +266,50 @@ test('realtime validates canonical snapshot price bounds, positive sizes, unique
   }
 })
 
-test('realtime sorts valid unsorted snapshot strings deterministically', () => {
+test('realtime rejects semantically duplicate snapshot prices on the same side without accepting state', () => {
+  const duplicateCases = [
+    { side: 'bids', prices: ['0.4', '0.40'] },
+    { side: 'asks', prices: ['0', '0.0'] },
+    { side: 'bids', prices: ['1', '1.00'] },
+    { side: 'asks', prices: ['0.7', `0.7${'0'.repeat(128)}`] },
+  ] as const
+
+  for (const [index, duplicate] of duplicateCases.entries()) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+    const deliveries: number[] = []
+    client.onOrderBook((book) => deliveries.push(book.deliveryCounter))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open()
+    const duplicateLevels = duplicate.prices.map((price, levelIndex) => ({ price, size: String(levelIndex + 1) }))
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `duplicate-${index}`, payload: {
+      hash: `rejected-hash-${index}`, timestamp: '2026-08-13T12:00:00.125Z',
+      bids: duplicate.side === 'bids' ? duplicateLevels : [],
+      asks: duplicate.side === 'asks' ? duplicateLevels : [],
+    } }))
+
+    assert.equal(client.getState(), 'RESYNC_REQUIRED', `${duplicate.side}: ${duplicate.prices.join('/')}`)
+    assert.equal(deliveries.length, 0, `${duplicate.side}: ${duplicate.prices.join('/')}`)
+
+    socket.message(dataEnvelope('orderbook.snapshot', 1, {
+      eventId: `duplicate-${index}`, streamEpoch: 2, payload: {
+        hash: `recovery-hash-${index}`, timestamp: '2026-08-13T12:00:01.125Z',
+        bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+      },
+    }))
+    socket.message(dataEnvelope('orderbook.delta', 2, { streamEpoch: 2, eventId: `after-duplicate-${index}`, payload:
+      canonicalOrderBookDeltaPayload({
+        BaseHash: `recovery-hash-${index}`, NextHash: `after-recovery-hash-${index}`,
+        Timestamp: '2026-08-13T12:00:01.500Z', Price: '0.3', Size: '1',
+      }),
+    }))
+
+    assert.equal(client.getState(), 'SYNCHRONIZED', `${duplicate.side} recovery`)
+    assert.deepEqual(deliveries, [1, 2], `${duplicate.side} recovery`)
+  }
+})
+
+test('realtime accepts and sorts distinct close fixed-point snapshot prices on the same side', () => {
   const socket = new FakeSocket()
   const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
   const books: Array<{ bids: Array<{ price: string }>; asks: Array<{ price: string }> }> = []
@@ -275,11 +318,11 @@ test('realtime sorts valid unsorted snapshot strings deterministically', () => {
   client.connect(); socket.open()
   socket.message(dataEnvelope('orderbook.snapshot', 1, { payload: {
     hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
-    bids: [{ price: '0.2', size: '1' }, { price: '0.40', size: '2' }, { price: '0.3', size: '3' }],
-    asks: [{ price: '0.8', size: '1' }, { price: '0.60', size: '2' }, { price: '0.7', size: '3' }],
+    bids: [{ price: '0.4', size: '1' }, { price: '0.40000000000000000000000000000000000001', size: '2' }],
+    asks: [{ price: '0.60000000000000000000000000000000000001', size: '1' }, { price: '0.6', size: '2' }],
   } }))
-  assert.deepEqual(books[0].bids.map((level) => level.price), ['0.40', '0.3', '0.2'])
-  assert.deepEqual(books[0].asks.map((level) => level.price), ['0.60', '0.7', '0.8'])
+  assert.deepEqual(books[0].bids.map((level) => level.price), ['0.40000000000000000000000000000000000001', '0.4'])
+  assert.deepEqual(books[0].asks.map((level) => level.price), ['0.6', '0.60000000000000000000000000000000000001'])
 })
 
 test('realtime applies bid and ask deltas in canonical order and removes zero-size levels', () => {

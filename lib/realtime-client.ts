@@ -246,12 +246,11 @@ export class RealtimeClient {
   private levels(value: unknown): OrderBookLevel[] | null {
     if (!Array.isArray(value)) return null
     const levels: OrderBookLevel[] = []
-    const prices = new Set<string>()
     for (const level of value) {
       if (!this.isRecord(level) || typeof level.price !== 'string' || typeof level.size !== 'string' ||
         !this.isDecimal(level.price) || !this.isProbability(level.price) ||
-        !this.isDecimal(level.size) || this.compareDecimal(level.size, '0') <= 0 || prices.has(level.price)) return null
-      prices.add(level.price)
+        !this.isDecimal(level.size) || this.compareDecimal(level.size, '0') <= 0 ||
+        levels.some((prior) => this.compareDecimal(prior.price, level.price as string) === 0)) return null
       levels.push({ price: level.price, size: level.size })
     }
     return levels

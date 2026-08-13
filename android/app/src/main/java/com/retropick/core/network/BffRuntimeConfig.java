@@ -1,7 +1,9 @@
 package com.retropick.core.network;
 
 import com.retropick.app.BuildConfig;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Set;
 
@@ -49,19 +51,18 @@ public final class BffRuntimeConfig {
 
         long ipv4 = parseIpv4(host);
         if (ipv4 >= 0) return ipv4 == 0 || (ipv4 >>> 24) == 127;
-        if (host.equals("::") || host.equals("::1")) return true;
-        if (!host.startsWith("::ffff:")) return false;
-
-        String mapped = host.substring("::ffff:".length());
-        long mappedIpv4 = parseIpv4(mapped);
-        if (mappedIpv4 >= 0) return mappedIpv4 == 0 || (mappedIpv4 >>> 24) == 127;
-        String[] halves = mapped.split(":", -1);
-        if (halves.length != 2) return false;
+        if (!host.contains(":")) return false;
         try {
-            long mappedValue = (Long.parseLong(halves[0], 16) << 16) | Long.parseLong(halves[1], 16);
-            return mappedValue == 0 || (mappedValue >>> 24) == 127;
-        } catch (NumberFormatException error) {
+            InetAddress address = InetAddress.getByName(host);
+            byte[] bytes = address.getAddress();
+            if (address.isLoopbackAddress() || address.isAnyLocalAddress()) return true;
+            if (bytes.length == 4) {
+                int firstOctet = bytes[0] & 0xff;
+                return firstOctet == 0 || firstOctet == 127;
+            }
             return false;
+        } catch (UnknownHostException error) {
+            return true;
         }
     }
 

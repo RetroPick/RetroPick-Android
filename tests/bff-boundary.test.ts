@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-config.ts'
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
+import { fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
 
 const production = {
   NEXT_PUBLIC_BFF_HTTP_URL: 'https://bff.retropick.example/api/v1',
@@ -87,6 +88,23 @@ test('BFF HTTP requests explicitly include session-cookie credentials', async ()
     httpUrl: production.NEXT_PUBLIC_BFF_HTTP_URL,
     fetchImpl,
   }).fetchCapabilitiesFromBff()
+
+  assert.equal(requestInit?.credentials, 'include')
+})
+
+test('Polymarket market BFF request explicitly includes session-cookie credentials', async () => {
+  const originalFetch = globalThis.fetch
+  let requestInit: RequestInit | undefined
+  globalThis.fetch = async (_url, init) => {
+    requestInit = init
+    return Response.json([])
+  }
+
+  try {
+    await fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 
   assert.equal(requestInit?.credentials, 'include')
 })

@@ -299,7 +299,7 @@ export async function fetchLivePolymarketMarkets(bffUrl = process.env.NEXT_PUBLI
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
-    const response = await fetch(`${bffUrl.replace(/\/$/, '')}/markets`, { signal: controller.signal, headers: { Accept: 'application/json' } })
+    const response = await fetch(`${bffUrl.replace(/\/$/, '')}/markets`, { credentials: 'include', signal: controller.signal, headers: { Accept: 'application/json' } })
     clearTimeout(timeoutId)
     if (!response.ok) return []
     const data = await response.json()

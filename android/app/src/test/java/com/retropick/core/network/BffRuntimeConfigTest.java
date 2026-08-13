@@ -22,11 +22,17 @@ public class BffRuntimeConfigTest {
             "127.0.0.2",
             "127.255.255.255",
             "[::1]",
+            "[0:0:0:0:0:0:0:1]",
             "[::ffff:127.0.0.1]",
             "[::ffff:7f00:2]",
+            "[0:0:0:0:0:ffff:127.0.0.1]",
+            "[0:0:0:0:0:ffff:7f00:1]",
             "0.0.0.0",
             "[::]",
+            "[0:0:0:0:0:0:0:0]",
             "[::ffff:0.0.0.0]",
+            "[0:0:0:0:0:ffff:0.0.0.0]",
+            "[0:0:0:0:0:ffff:0:0]",
             "localhost",
             "localhost.",
             "api.localhost",
@@ -47,6 +53,16 @@ public class BffRuntimeConfigTest {
                 false
             ));
         }
+    }
+
+    @Test public void releaseAllowsPublicDnsBffHosts() {
+        BffRuntimeConfig config = BffRuntimeConfig.resolve(
+            "https://bff.retropick.example/api/v1",
+            "wss://bff.retropick.example/api/v1/markets/realtime",
+            true,
+            false
+        );
+        assertTrue(config.isAvailable());
     }
 
     @Test public void debugAllowsEmulatorBffOnlyWhenExplicitlyConfigured() {

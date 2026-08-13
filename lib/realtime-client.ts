@@ -193,8 +193,15 @@ export class RealtimeClient {
         this.requireResync(reconciliation)
         return
       }
-      reconciliation.bids = this.sortLevels(bids, 'bid')
-      reconciliation.asks = this.sortLevels(asks, 'ask')
+      const sortedBids = this.sortLevels(bids, 'bid')
+      const sortedAsks = this.sortLevels(asks, 'ask')
+      if (sortedBids.length > 0 && sortedAsks.length > 0 &&
+        this.compareDecimal(sortedBids[0].price, sortedAsks[0].price) >= 0) {
+        this.requireResync(reconciliation)
+        return
+      }
+      reconciliation.bids = sortedBids
+      reconciliation.asks = sortedAsks
       reconciliation.bookHash = hash
       reconciliation.bookTimestamp = timestamp
       reconciliation.state = 'SYNCHRONIZED'
@@ -238,11 +245,16 @@ export class RealtimeClient {
 
   private levels(value: unknown): OrderBookLevel[] | null {
     if (!Array.isArray(value)) return null
-    const levels = value.map((level: unknown) => {
-      if (!this.isRecord(level)) return { price: '', size: '' }
-      return { price: String(level.price ?? ''), size: String(level.size ?? '') }
-    })
-    return levels.every((level) => this.isDecimal(level.price) && this.isDecimal(level.size)) ? levels : null
+    const levels: OrderBookLevel[] = []
+    const prices = new Set<string>()
+    for (const level of value) {
+      if (!this.isRecord(level) || typeof level.price !== 'string' || typeof level.size !== 'string' ||
+        !this.isDecimal(level.price) || !this.isProbability(level.price) ||
+        !this.isDecimal(level.size) || this.compareDecimal(level.size, '0') <= 0 || prices.has(level.price)) return null
+      prices.add(level.price)
+      levels.push({ price: level.price, size: level.size })
+    }
+    return levels
   }
 
   private delta(value: Record<string, unknown>) {

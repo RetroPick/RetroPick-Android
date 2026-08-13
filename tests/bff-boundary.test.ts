@@ -205,6 +205,83 @@ test('realtime applies a canonical backend delta after its snapshot', () => {
   assert.equal(states.includes('DEGRADED'), false)
 })
 
+test('realtime rejects non-string and non-canonical snapshot levels without accepting them', () => {
+  const invalidValues: unknown[] = [1, null, true, {}, -1, '0.4e0', '01', '', 'NaN', 'Infinity']
+  for (const [index, invalid] of invalidValues.entries()) {
+    for (const field of ['price', 'size'] as const) {
+      const socket = new FakeSocket()
+      const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+      const deliveries: number[] = []
+      client.onOrderBook((book) => deliveries.push(book.deliveryCounter))
+      client.subscribeToken('token-1', 'market-1')
+      client.connect(); socket.open()
+
+      socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `invalid-${field}-${index}`, payload: {
+        hash: 'invalid-hash', timestamp: '2026-08-13T12:00:00.125Z',
+        bids: [{ price: '0.4', size: '2', [field]: invalid }], asks: [{ price: '0.6', size: '3' }],
+      } }))
+
+      assert.equal(client.getState(), 'RESYNC_REQUIRED', `${field}=${JSON.stringify(invalid)}`)
+      assert.deepEqual(deliveries, [], `${field}=${JSON.stringify(invalid)}`)
+      socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `invalid-${field}-${index}`, streamEpoch: 2, payload: {
+        hash: 'recovery-hash', timestamp: '2026-08-13T12:00:01.125Z',
+        bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+      } }))
+      assert.equal(client.getState(), 'SYNCHRONIZED', `${field} recovery`)
+      assert.deepEqual(deliveries, [1], `${field} recovery`)
+    }
+  }
+})
+
+test('realtime validates canonical snapshot price bounds, positive sizes, uniqueness, and spread before acceptance', () => {
+  const invalidBooks = [
+    { bids: [{ price: '1.01', size: '1' }], asks: [] },
+    { bids: [], asks: [{ price: '2', size: '1' }] },
+    { bids: [{ price: '0.4', size: '0' }], asks: [{ price: '0.6', size: '1' }] },
+    { bids: [{ price: '0.4', size: '1' }, { price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '1' }] },
+    { bids: [{ price: '0.4', size: '1' }], asks: [{ price: '0.6', size: '1' }, { price: '0.6', size: '2' }] },
+    { bids: [{ price: '0.7', size: '1' }], asks: [{ price: '0.6', size: '1' }] },
+    { bids: [{ price: '0.6', size: '1' }], asks: [{ price: '0.60', size: '1' }] },
+  ]
+  for (const [index, payload] of invalidBooks.entries()) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+    const deliveries: number[] = []
+    client.onOrderBook((book) => deliveries.push(book.deliveryCounter))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open()
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { payload: {
+      hash: `invalid-${index}`, timestamp: '2026-08-13T12:00:00.125Z', ...payload,
+    } }))
+    assert.equal(client.getState(), 'RESYNC_REQUIRED', `case ${index}`)
+    assert.deepEqual(deliveries, [], `case ${index}`)
+
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `recovery-${index}`, streamEpoch: 2, payload: {
+      hash: `recovery-${index}`, timestamp: '2026-08-13T12:00:01.125Z',
+      bids: [{ price: '0.2', size: '1' }, { price: '0.4', size: '2' }],
+      asks: [{ price: '0.8', size: '4' }, { price: '0.6', size: '3' }],
+    } }))
+    assert.equal(client.getState(), 'SYNCHRONIZED', `case ${index} recovery`)
+    assert.deepEqual(deliveries, [1], `case ${index} recovery`)
+  }
+})
+
+test('realtime sorts valid unsorted snapshot strings deterministically', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  const books: Array<{ bids: Array<{ price: string }>; asks: Array<{ price: string }> }> = []
+  client.onOrderBook((book) => books.push(book))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect(); socket.open()
+  socket.message(dataEnvelope('orderbook.snapshot', 1, { payload: {
+    hash: 'hash-1', timestamp: '2026-08-13T12:00:00.125Z',
+    bids: [{ price: '0.2', size: '1' }, { price: '0.40', size: '2' }, { price: '0.3', size: '3' }],
+    asks: [{ price: '0.8', size: '1' }, { price: '0.60', size: '2' }, { price: '0.7', size: '3' }],
+  } }))
+  assert.deepEqual(books[0].bids.map((level) => level.price), ['0.40', '0.3', '0.2'])
+  assert.deepEqual(books[0].asks.map((level) => level.price), ['0.60', '0.7', '0.8'])
+})
+
 test('realtime applies bid and ask deltas in canonical order and removes zero-size levels', () => {
   const socket = new FakeSocket()
   const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })

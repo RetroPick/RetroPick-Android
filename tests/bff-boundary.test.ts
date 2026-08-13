@@ -5,6 +5,7 @@ import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
 import { fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
+import { controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
 
 const production = {
   NEXT_PUBLIC_BFF_HTTP_URL: 'https://bff.retropick.example/api/v1',
@@ -131,12 +132,87 @@ function envelope(
   marketId = 'market-1',
   tokenId = 'token-1',
 ) {
-  return {
-    schemaVersion: '1.0', eventId, eventType: counter === 1 ? 'orderbook.snapshot' : 'orderbook.delta',
-    marketId, tokenId, streamEpoch: epoch, deliveryCounter: counter,
-    observedAt: 900, requestId: `req-${marketId}-${tokenId}-${counter}`, payload: { bids: [], asks: [] },
-  }
+  return dataEnvelope(counter === 1 ? 'orderbook.snapshot' : 'orderbook.delta', counter, {
+    eventId, marketId, upstreamId: tokenId, tokenId, streamEpoch: epoch,
+  })
 }
+
+test('realtime emits canonical subscribe and unsubscribe commands', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  client.subscribeToken('token-1', 'market-1')
+  client.connect()
+  socket.open()
+  assert.deepEqual(JSON.parse(socket.sent[0]), { command: 'subscribe', marketId: 'market-1', tokenId: 'token-1' })
+
+  client.unsubscribeToken('token-1', 'market-1')
+  assert.deepEqual(JSON.parse(socket.sent[1]), { command: 'unsubscribe', marketId: 'market-1', tokenId: 'token-1' })
+})
+
+test('realtime accepts canonical controls and schema-version-1 data without requestId', () => {
+  const socket = new FakeSocket()
+  const now = Date.parse('2026-08-13T12:00:01.125Z')
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket, now: () => now })
+  const books: Array<{ observedAt: string; publishedAt: string }> = []
+  client.onOrderBook((book) => books.push(book))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect()
+  socket.open()
+
+  socket.message(controlEnvelope('hello'))
+  socket.message(controlEnvelope('subscribed', 'market-1', 'token-1'))
+  assert.equal(client.getState(), 'SNAPSHOT_LOADING')
+  socket.message(dataEnvelope('orderbook.snapshot', 1))
+
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+  assert.equal(client.getLatency(), 1000)
+  assert.deepEqual(books, [{
+    marketId: 'market-1', tokenId: 'token-1', bids: [], asks: [],
+    observedAt: '2026-08-13T12:00:00.125Z', publishedAt: '2026-08-13T12:00:00.250Z',
+    streamEpoch: 1, deliveryCounter: 1,
+  }])
+})
+
+test('realtime recognizes every canonical data event type and payload shape', () => {
+  const socket = new FakeSocket()
+  const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })
+  const trades: unknown[] = []
+  const signals: unknown[] = []
+  client.onTrade((trade) => trades.push(trade))
+  client.onSignal((signal) => signals.push(signal))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect()
+  socket.open()
+  socket.message(dataEnvelope('orderbook.snapshot', 1))
+  socket.message(dataEnvelope('trade.executed', 2, { payload: { TokenID: 'token-1', Side: 'BUY', Price: '0.52', Size: '10' } }))
+  socket.message(dataEnvelope('market.tick_size_changed', 3, { payload: { TokenID: 'token-1', OldTickSize: '0.01', NewTickSize: '0.001' } }))
+  socket.message(dataEnvelope('market.updated', 4, { payload: { status: 'closed' } }))
+  socket.message(dataEnvelope('signal.created', 5, { payload: { schemaVersion: '1', id: 'signal-1', type: 'price_move', marketId: 'market-1', state: 'active' } }))
+  socket.message(dataEnvelope('signal.retracted', 6, { payload: { schemaVersion: '1', id: 'signal-1', type: 'price_move', marketId: 'market-1', state: 'retracted' } }))
+  socket.message(dataEnvelope('resync.required', 7, { payload: { reason: 'resync_required' } }))
+
+  assert.equal(trades.length, 1)
+  assert.equal(signals.length, 2)
+  assert.equal(client.getState(), 'RESYNC_REQUIRED')
+})
+
+test('realtime rejects invalid RFC3339 timestamps without computing latency', () => {
+  for (const [field, invalid] of [
+    ['observedAt', 'not-a-timestamp'],
+    ['observedAt', '2026-02-30T12:00:00Z'],
+    ['publishedAt', 'not-a-timestamp'],
+    ['publishedAt', '2026-13-01T12:00:00Z'],
+  ] as const) {
+    const socket = new FakeSocket()
+    const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket, now: () => Date.parse('2026-08-13T12:00:01Z') })
+    client.subscribeToken('token-1', 'market-1')
+    client.connect()
+    socket.open()
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { [field]: invalid }))
+    assert.equal(client.getState(), 'DEGRADED', `${field}: ${invalid}`)
+    assert.equal(client.getLatency(), null, `${field}: ${invalid}`)
+  }
+})
 
 test('realtime reconnects, resubscribes, rejects malformed/stale/duplicate/out-of-order data', () => {
   const sockets: FakeSocket[] = []
@@ -145,7 +221,7 @@ test('realtime reconnects, resubscribes, rejects malformed/stale/duplicate/out-o
     url: production.NEXT_PUBLIC_BFF_WS_URL,
     socketFactory: () => { const socket = new FakeSocket(); sockets.push(socket); return socket },
     scheduleReconnect: (fn) => { reconnects.push(fn); return 1 },
-    now: () => 1000,
+    now: () => Date.parse('2026-08-13T12:00:00.225Z'),
   })
   const books: number[] = []
   client.onOrderBook((book) => books.push(book.deliveryCounter))

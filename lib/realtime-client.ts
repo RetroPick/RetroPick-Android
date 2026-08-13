@@ -1,19 +1,24 @@
 'use client'
 
 export type ReconcilerState = 'UNINITIALIZED' | 'SNAPSHOT_LOADING' | 'SYNCHRONIZED' | 'DEGRADED' | 'RESYNC_REQUIRED'
+export type RealtimeEventType =
+  | 'hello' | 'subscribed' | 'unsubscribed' | 'orderbook.snapshot' | 'orderbook.delta'
+  | 'trade.executed' | 'market.tick_size_changed' | 'market.updated' | 'signal.created'
+  | 'signal.retracted' | 'resync.required' | 'error'
 export interface OrderBookLevel { price: string; size: string }
 export interface OrderBookPayload {
   marketId: string; tokenId: string; bids: OrderBookLevel[]; asks: OrderBookLevel[]
-  observedAt: number; streamEpoch: number; deliveryCounter: number; requestId: string
+  observedAt: string; publishedAt: string; streamEpoch: number; deliveryCounter: number
 }
 export interface TradeExecutedPayload {
-  marketId: string; tokenId: string; side: 'YES' | 'NO'; price: string; size: string
-  user: string; observedAt: number; streamEpoch: number; deliveryCounter: number; requestId: string
+  marketId: string; tokenId: string; observedAt: string; publishedAt: string
+  streamEpoch: number; deliveryCounter: number; payload: Record<string, unknown>
 }
 export interface SignalEnvelope {
-  schemaVersion: string; eventId: string; eventType: 'signal.created' | 'signal.retracted'; source: string
-  marketId: string; tokenId?: string; signalType: 'price_move' | 'liquidity_change' | 'whale_trade'
-  title: string; description: string; side?: 'YES' | 'NO'; amount?: string; price?: string; timeAgo: string; observedAt: number
+  schemaVersion: '1'; eventId: string; eventType: 'signal.created' | 'signal.retracted'; source: 'retropick'
+  marketId: string; upstreamId: string; tokenId: string; sequence: null; snapshotHash?: string
+  streamEpoch: number; deliveryCounter: number; observedAt: string; publishedAt: string
+  payload: Record<string, unknown>
 }
 export interface WebSocketLike {
   readyState: number
@@ -39,10 +44,26 @@ type SubscriptionReconciliation = {
   counter: number
   seenEventIds: Set<string>
 }
-type Envelope = {
-  schemaVersion: string; eventId: string; eventType: string; marketId: string; tokenId: string
-  streamEpoch: number; deliveryCounter: number; observedAt: number; requestId: string; payload: any
+type ControlEventType = 'hello' | 'subscribed' | 'unsubscribed' | 'error'
+type ControlEnvelope = {
+  schemaVersion: '1'; eventType: ControlEventType; marketId?: string; tokenId?: string
+  sequence: null; payload: Record<string, unknown>
 }
+type DataEventType = Exclude<RealtimeEventType, ControlEventType>
+type DataEnvelope = {
+  schemaVersion: '1'; eventId: string; eventType: DataEventType; source: 'retropick'
+  marketId: string; upstreamId: string; tokenId: string; sequence: null; snapshotHash?: string
+  streamEpoch: number; deliveryCounter: number; observedAt: string; publishedAt: string
+  payload: Record<string, unknown>
+}
+type Envelope = ControlEnvelope | DataEnvelope
+
+const CONTROL_TYPES = new Set<RealtimeEventType>(['hello', 'subscribed', 'unsubscribed', 'error'])
+const DATA_TYPES = new Set<RealtimeEventType>([
+  'orderbook.snapshot', 'orderbook.delta', 'trade.executed', 'market.tick_size_changed',
+  'market.updated', 'signal.created', 'signal.retracted', 'resync.required',
+])
+const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/
 
 export class RealtimeClient {
   private ws: WebSocketLike | null = null
@@ -99,26 +120,47 @@ export class RealtimeClient {
     if (this.ws?.readyState === 1) this.sendSubscription('unsubscribe', subscription)
   }
 
-  private sendSubscription(operation: 'subscribe' | 'unsubscribe', subscription: Subscription) {
-    this.ws?.send(JSON.stringify({ operation, marketId: subscription.marketId, tokenId: subscription.tokenId }))
+  private sendSubscription(command: 'subscribe' | 'unsubscribe', subscription: Subscription) {
+    this.ws?.send(JSON.stringify({ command, marketId: subscription.marketId, tokenId: subscription.tokenId }))
   }
 
   private parseEnvelope(raw: string): Envelope | null {
     try {
-      const value = JSON.parse(raw)
-      if (!value || typeof value !== 'object' || typeof value.schemaVersion !== 'string' || typeof value.eventId !== 'string' ||
-        typeof value.eventType !== 'string' || typeof value.marketId !== 'string' || typeof value.tokenId !== 'string' ||
-        !Number.isSafeInteger(value.streamEpoch) || !Number.isSafeInteger(value.deliveryCounter) || typeof value.observedAt !== 'number' ||
-        typeof value.requestId !== 'string' || !value.payload || typeof value.payload !== 'object') return null
-      return value as Envelope
+      const value: unknown = JSON.parse(raw)
+      if (!this.isRecord(value) || value.schemaVersion !== '1' || typeof value.eventType !== 'string' ||
+        value.sequence !== null || !this.isRecord(value.payload)) return null
+      if (CONTROL_TYPES.has(value.eventType as RealtimeEventType)) {
+        if ((value.marketId !== undefined && typeof value.marketId !== 'string') ||
+          (value.tokenId !== undefined && typeof value.tokenId !== 'string')) return null
+        return value as ControlEnvelope
+      }
+      if (!DATA_TYPES.has(value.eventType as RealtimeEventType) || typeof value.eventId !== 'string' || !value.eventId ||
+        value.source !== 'retropick' || typeof value.marketId !== 'string' || !value.marketId ||
+        typeof value.upstreamId !== 'string' || !value.upstreamId || typeof value.tokenId !== 'string' || !value.tokenId ||
+        !this.isCounter(value.streamEpoch) || !this.isCounter(value.deliveryCounter) ||
+        !this.isRFC3339(value.observedAt) || !this.isRFC3339(value.publishedAt) ||
+        (value.snapshotHash !== undefined && typeof value.snapshotHash !== 'string')) return null
+      return value as DataEnvelope
     } catch { return null }
   }
 
   private handleMessage(raw: string) {
     const envelope = this.parseEnvelope(raw)
     if (!envelope) { this.setDegraded(); return }
+    if (this.isControlEnvelope(envelope)) {
+      if (envelope.eventType === 'error') this.setDegraded()
+      return
+    }
     const reconciliation = this.reconciliation.get(this.subscriptionKey(envelope.marketId, envelope.tokenId))
     if (!reconciliation || reconciliation.seenEventIds.has(envelope.eventId)) return
+    if (envelope.eventType === 'resync.required') {
+      reconciliation.state = 'RESYNC_REQUIRED'
+      reconciliation.epoch = envelope.streamEpoch
+      reconciliation.counter = 0
+      reconciliation.seenEventIds.add(envelope.eventId)
+      this.refreshState()
+      return
+    }
     if (reconciliation.epoch !== null && envelope.streamEpoch < reconciliation.epoch) return
     if (reconciliation.epoch === null || envelope.streamEpoch > reconciliation.epoch) {
       if (envelope.eventType !== 'orderbook.snapshot') {
@@ -138,24 +180,54 @@ export class RealtimeClient {
     }
     if (reconciliation.state !== 'SYNCHRONIZED' && envelope.eventType !== 'orderbook.snapshot') return
 
+    const observedAt = Date.parse(envelope.observedAt)
     reconciliation.counter = envelope.deliveryCounter
     reconciliation.seenEventIds.add(envelope.eventId)
-    this.latencyMs = Math.max(0, this.now() - envelope.observedAt)
+    this.latencyMs = Math.max(0, this.now() - observedAt)
     if (envelope.eventType === 'orderbook.snapshot' || envelope.eventType === 'orderbook.delta') {
       const bids = this.levels(envelope.payload.bids); const asks = this.levels(envelope.payload.asks)
       if (!bids || !asks) { this.setDegraded(); return }
       reconciliation.state = 'SYNCHRONIZED'
       this.refreshState()
-      this.orderBookListeners.forEach((fn) => fn({ marketId: envelope.marketId, tokenId: envelope.tokenId, bids, asks, observedAt: envelope.observedAt, streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter, requestId: envelope.requestId }))
+      this.orderBookListeners.forEach((fn) => fn({
+        marketId: envelope.marketId, tokenId: envelope.tokenId, bids, asks,
+        observedAt: envelope.observedAt, publishedAt: envelope.publishedAt,
+        streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter,
+      }))
+    } else if (envelope.eventType === 'trade.executed') {
+      this.tradeListeners.forEach((fn) => fn({
+        marketId: envelope.marketId, tokenId: envelope.tokenId,
+        observedAt: envelope.observedAt, publishedAt: envelope.publishedAt,
+        streamEpoch: envelope.streamEpoch, deliveryCounter: envelope.deliveryCounter, payload: envelope.payload,
+      }))
+    } else if (envelope.eventType === 'signal.created' || envelope.eventType === 'signal.retracted') {
+      this.signalListeners.forEach((fn) => fn(envelope as SignalEnvelope))
     }
   }
 
   private levels(value: unknown): OrderBookLevel[] | null {
     if (!Array.isArray(value)) return null
-    const levels = value.map((level: any) => ({ price: String(level?.price ?? ''), size: String(level?.size ?? '') }))
+    const levels = value.map((level: unknown) => {
+      if (!this.isRecord(level)) return { price: '', size: '' }
+      return { price: String(level.price ?? ''), size: String(level.size ?? '') }
+    })
     return levels.every((level) => level.price && level.size && Number.isFinite(Number(level.price)) && Number.isFinite(Number(level.size))) ? levels : null
   }
 
+  private isRecord(value: unknown): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) }
+  private isControlEnvelope(envelope: Envelope): envelope is ControlEnvelope { return CONTROL_TYPES.has(envelope.eventType) }
+  private isCounter(value: unknown): value is number { return Number.isSafeInteger(value) && (value as number) >= 0 }
+  private isRFC3339(value: unknown): value is string {
+    if (typeof value !== 'string') return false
+    const match = RFC3339.exec(value)
+    if (!match || !Number.isFinite(Date.parse(value))) return false
+    const [, year, month, day, hour, minute, second, offsetHour, offsetMinute] = match
+    const y = Number(year); const m = Number(month); const d = Number(day)
+    const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate()
+    return m >= 1 && m <= 12 && d >= 1 && d <= daysInMonth && Number(hour) <= 23 &&
+      Number(minute) <= 59 && Number(second) <= 59 &&
+      (offsetHour === undefined || (Number(offsetHour) <= 23 && Number(offsetMinute) <= 59))
+  }
   private scheduleReconnect() {
     if (this.reconnectPending) return
     this.reconnectPending = true

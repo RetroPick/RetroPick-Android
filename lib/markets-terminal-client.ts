@@ -73,7 +73,7 @@ export class MarketsTerminalClient {
     const timer = setTimeout(() => controller.abort(), this.timeoutMs)
     const started = this.now()
     try {
-      const response = await this.fetchImpl(`${this.httpUrl}${path}`, { signal: controller.signal, headers: { Accept: 'application/json' } })
+      const response = await this.fetchImpl(`${this.httpUrl}${path}`, { credentials: 'include', signal: controller.signal, headers: { Accept: 'application/json' } })
       const requestId = response.headers.get('x-request-id')
       if (!response.ok) throw Object.assign(new Error(`BFF HTTP ${response.status}`), { requestId })
       const data = await response.json()

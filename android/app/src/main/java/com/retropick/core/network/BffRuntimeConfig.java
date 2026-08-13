@@ -2,6 +2,7 @@ package com.retropick.core.network;
 
 import com.retropick.app.BuildConfig;
 import java.net.URI;
+import java.util.Locale;
 import java.util.Set;
 
 public final class BffRuntimeConfig {
@@ -35,8 +36,50 @@ public final class BffRuntimeConfig {
         final URI uri;
         try { uri = URI.create(value); } catch (IllegalArgumentException error) { throw new IllegalArgumentException(label + " must be an absolute URL", error); }
         if (!uri.isAbsolute() || !schemes.contains(uri.getScheme())) throw new IllegalArgumentException(label + " must use " + String.join(" or ", schemes));
-        if (production && Set.of("localhost", "127.0.0.1", "10.0.2.2").contains(uri.getHost())) throw new IllegalArgumentException(label + " cannot use localhost in production");
+        if (production && isForbiddenProductionHost(uri.getHost())) throw new IllegalArgumentException(label + " cannot use a loopback, wildcard, or localhost host in production");
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    }
+
+    private static boolean isForbiddenProductionHost(String hostname) {
+        if (hostname == null) return true;
+        String host = hostname.toLowerCase(Locale.ROOT);
+        if (host.startsWith("[") && host.endsWith("]")) host = host.substring(1, host.length() - 1);
+        if (host.endsWith(".")) host = host.substring(0, host.length() - 1);
+        if (host.equals("*") || host.equals("localhost") || host.endsWith(".localhost")) return true;
+
+        long ipv4 = parseIpv4(host);
+        if (ipv4 >= 0) return ipv4 == 0 || (ipv4 >>> 24) == 127;
+        if (host.equals("::") || host.equals("::1")) return true;
+        if (!host.startsWith("::ffff:")) return false;
+
+        String mapped = host.substring("::ffff:".length());
+        long mappedIpv4 = parseIpv4(mapped);
+        if (mappedIpv4 >= 0) return mappedIpv4 == 0 || (mappedIpv4 >>> 24) == 127;
+        String[] halves = mapped.split(":", -1);
+        if (halves.length != 2) return false;
+        try {
+            long mappedValue = (Long.parseLong(halves[0], 16) << 16) | Long.parseLong(halves[1], 16);
+            return mappedValue == 0 || (mappedValue >>> 24) == 127;
+        } catch (NumberFormatException error) {
+            return false;
+        }
+    }
+
+    private static long parseIpv4(String host) {
+        String[] octets = host.split("\\.", -1);
+        if (octets.length != 4) return -1;
+        long value = 0;
+        try {
+            for (String octet : octets) {
+                if (octet.isEmpty()) return -1;
+                int parsed = Integer.parseInt(octet);
+                if (parsed < 0 || parsed > 255) return -1;
+                value = (value << 8) | parsed;
+            }
+            return value;
+        } catch (NumberFormatException error) {
+            return -1;
+        }
     }
 
     private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value; }

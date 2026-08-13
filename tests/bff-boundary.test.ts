@@ -22,6 +22,34 @@ test('production requires explicit BFF URLs and secure schemes', () => {
   })
 })
 
+test('production rejects loopback, wildcard, and localhost-alias BFF hosts', () => {
+  const forbiddenHosts = [
+    '127.0.0.2',
+    '127.255.255.255',
+    '[::1]',
+    '[::ffff:127.0.0.1]',
+    '[::ffff:7f00:2]',
+    '0.0.0.0',
+    '[::]',
+    '[::ffff:0.0.0.0]',
+    'localhost',
+    'localhost.',
+    'api.localhost',
+    '*',
+  ]
+
+  for (const host of forbiddenHosts) {
+    assert.throws(() => resolveRuntimeConfig({
+      NEXT_PUBLIC_BFF_HTTP_URL: `https://${host}/api/v1`,
+      NEXT_PUBLIC_BFF_WS_URL: production.NEXT_PUBLIC_BFF_WS_URL,
+    }, 'production'), RuntimeConfigurationError, `HTTP ${host}`)
+    assert.throws(() => resolveRuntimeConfig({
+      NEXT_PUBLIC_BFF_HTTP_URL: production.NEXT_PUBLIC_BFF_HTTP_URL,
+      NEXT_PUBLIC_BFF_WS_URL: `wss://${host}/api/v1/markets/realtime`,
+    }, 'production'), RuntimeConfigurationError, host)
+  }
+})
+
 test('simulation is explicit and cannot be enabled in production', () => {
   assert.equal(resolveRuntimeConfig({
     NEXT_PUBLIC_BFF_HTTP_URL: 'http://10.0.2.2:8080/api/v1',
@@ -46,6 +74,21 @@ test('capabilities and eligibility fail closed on HTTP errors and timeout', asyn
   assert.equal(eligibility.eligible, false)
   assert.equal(eligibility.jurisdiction, 'UNKNOWN')
   assert.equal(eligibility.health.availability, 'unavailable')
+})
+
+test('BFF HTTP requests explicitly include session-cookie credentials', async () => {
+  let requestInit: RequestInit | undefined
+  const fetchImpl: typeof fetch = async (_url, init) => {
+    requestInit = init
+    return Response.json({ features: {}, observedAt: '2026-08-13T00:00:00Z' })
+  }
+
+  await new MarketsTerminalClient({
+    httpUrl: production.NEXT_PUBLIC_BFF_HTTP_URL,
+    fetchImpl,
+  }).fetchCapabilitiesFromBff()
+
+  assert.equal(requestInit?.credentials, 'include')
 })
 
 class FakeSocket implements WebSocketLike {

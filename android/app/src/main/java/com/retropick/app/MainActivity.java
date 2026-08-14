@@ -9,10 +9,18 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+import com.retropick.core.notification.WhaleAlertsPlugin;
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends BridgeActivity {
+    static final List<Class<? extends Plugin>> BRIDGE_PLUGINS =
+            Collections.singletonList(WhaleAlertsPlugin.class);
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugins(BRIDGE_PLUGINS);
         super.onCreate(savedInstanceState);
         
         Window window = getWindow();

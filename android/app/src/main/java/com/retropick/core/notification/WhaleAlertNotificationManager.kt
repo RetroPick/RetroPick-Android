@@ -1,10 +1,12 @@
 package com.retropick.core.notification
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.retropick.core.model.WhaleSignal
 
 class WhaleAlertNotificationManager(private val context: Context) {
@@ -32,6 +34,14 @@ class WhaleAlertNotificationManager(private val context: Context) {
     }
 
     fun triggerWhaleAlert(signal: WhaleSignal) {
+        val permissionGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!WhaleAlertNotificationPolicy.canPostWhaleAlert(Build.VERSION.SDK_INT, permissionGranted)) {
+            return
+        }
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val title = "🐋 Whale Alert: ${signal.traderPseudonym ?: signal.traderAddress.take(8)}"

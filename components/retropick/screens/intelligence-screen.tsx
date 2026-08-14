@@ -375,9 +375,11 @@ const LEADERBOARD_TRADERS = [
 ]
 
 export function IntelligenceScreen({
-  onSelectMarket
+  onSelectMarket,
+  onEnableWhaleAlerts
 }: {
   onSelectMarket?: (marketId: string) => void
+  onEnableWhaleAlerts: () => Promise<boolean>
 }) {
   const [activeTab, setActiveTab] = useState<'whales' | 'traders' | 'paper'>('whales')
   const [searchQuery, setSearchQuery] = useState('')
@@ -430,7 +432,7 @@ export function IntelligenceScreen({
   const [paperCategoryInput, setPaperCategoryInput] = useState<string>('All')
 
   // Whale Alerts Settings
-  const [whaleAlertsEnabled, setWhaleAlertsEnabled] = useState(true)
+  const [whaleAlertsEnabled, setWhaleAlertsEnabled] = useState(false)
   const [followedWalletsAlertsEnabled, setFollowedWalletsAlertsEnabled] = useState(true)
   const [minTradeThreshold, setMinTradeThreshold] = useState(5000)
   const [minSmartScore, setMinSmartScore] = useState(70)
@@ -482,6 +484,17 @@ export function IntelligenceScreen({
       document.body.style.overflow = ''
     }
   }, [showPaperFollowConfirmation])
+
+  const toggleWhaleAlerts = async () => {
+    if (whaleAlertsEnabled) {
+      setWhaleAlertsEnabled(false)
+      return
+    }
+
+    if (await onEnableWhaleAlerts()) {
+      setWhaleAlertsEnabled(true)
+    }
+  }
 
   return (
     <div className={cn(
@@ -1467,7 +1480,7 @@ export function IntelligenceScreen({
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground">Whale Alerts</span>
                   <button
-                    onClick={() => setWhaleAlertsEnabled(!whaleAlertsEnabled)}
+                    onClick={toggleWhaleAlerts}
                     className={cn(
                       "w-10 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer",
                       whaleAlertsEnabled ? "bg-indigo-600" : "bg-secondary"

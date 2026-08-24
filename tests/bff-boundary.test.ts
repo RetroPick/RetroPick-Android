@@ -722,7 +722,7 @@ test('generated release output is not tracked in Git', async () => {
   const { execFile } = await import('node:child_process')
   const { promisify } = await import('node:util')
   const run = promisify(execFile)
-  const { stdout } = await run('git', ['ls-files', 'out', 'android/app/src/main/assets/public'], { cwd: new URL('..', import.meta.url) })
+  const { stdout } = await run('git', ['ls-files', 'out', 'android/app/src/main/assets/public', 'android/capacitor.settings.gradle'], { cwd: new URL('..', import.meta.url) })
   assert.equal(stdout.trim(), '')
 })
 

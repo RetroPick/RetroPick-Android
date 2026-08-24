@@ -12,7 +12,7 @@ if [ -n "$(git status --porcelain)" ]; then
   printf '%s\n' 'verify:android requires a clean source worktree; use a disposable worktree for verification' >&2
   exit 1
 fi
-if [ -n "$(git ls-files out android/app/src/main/assets/public android/app/build android/build)" ]; then
+if [ -n "$(git ls-files out android/app/src/main/assets/public android/app/build android/build android/capacitor.settings.gradle)" ]; then
   printf '%s\n' 'generated release assets are tracked; remove them from Git before release verification' >&2
   exit 1
 fi

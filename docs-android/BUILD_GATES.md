@@ -24,6 +24,6 @@ The command performs, in order:
 
 ## Generated outputs
 
-`out/` is Next's generated static export and was removed from Git because it contained stale shipping assets. Capacitor-owned copied web assets, generated plugin/config files, and Gradle build directories are also ignored. The gate regenerates these outputs reproducibly; do not commit them. Dispose of the dedicated worktree after verification rather than using any repository-wide restore or clean command, so unrelated work is never deleted.
+`out/` is Next's generated static export and was removed from Git because it contained stale shipping assets. Capacitor-owned copied web assets, generated plugin/config files (including `android/capacitor.settings.gradle`), and Gradle build directories are also ignored. The gate regenerates these outputs reproducibly; do not commit them. Dispose of the dedicated worktree after verification rather than using any repository-wide restore or clean command, so unrelated work is never deleted.
 
 Do not copy a root-level `android/` directory into this repository. Release BFF URLs remain explicit build inputs (`RETROPICK_BFF_HTTP_URL` and `RETROPICK_BFF_WS_URL`); the tracked default is empty and `DEMO_SIMULATION` is false for both debug and release.

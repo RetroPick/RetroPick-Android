@@ -19,5 +19,6 @@ out/
 *.tsbuildinfo
 android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/
+android/capacitor.settings.gradle
 android/app/build/
 android/build/

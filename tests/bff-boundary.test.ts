@@ -110,6 +110,24 @@ test('Polymarket market BFF request explicitly includes session-cookie credentia
   assert.equal(requestInit?.credentials, 'include')
 })
 
+test('market data fetch fails closed for timeout, non-OK, and malformed BFF responses', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    globalThis.fetch = async () => new Response('down', { status: 503 })
+    await assert.rejects(fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data/i)
+
+    globalThis.fetch = async () => new Response(JSON.stringify({ data: { unexpected: true } }), { status: 200 })
+    await assert.rejects(fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data/i)
+
+    globalThis.fetch = (_url, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('timed out', 'AbortError')))
+    })
+    await assert.rejects(fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data/i)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('market classification retains supported science and stocks categories', () => {
   assert.equal(classifyMarketCategory('biology medicine'), 'Science')
   assert.equal(classifyMarketCategory('NYSE equity shares'), 'Stocks')
@@ -623,4 +641,35 @@ test('actual AppShell release entrypoint is BFF-backed and cannot fabricate acco
   assert.doesNotMatch(shell, /Math\.random/)
   assert.doesNotMatch(shell, /0x23Cb836e35ed8213ad280a6D1F1C1149e830E300|trader@retropick\.app|Order Executed/)
   assert.doesNotMatch(shell, /StorageService\.load(Balance|Auth|MarketsCache|Positions|Activity)/)
+})
+
+test('AppShell transitive release surface exposes only verified read-only BFF market data', async () => {
+  const fs = await import('node:fs/promises')
+  const sourcePaths = [
+    '../components/retropick/app-shell.tsx',
+    '../components/retropick/screens/intelligence-screen.tsx',
+    '../components/retropick/screens/market-detail.tsx',
+    '../components/retropick/screens/explore-screen.tsx',
+    '../components/retropick/screens/portfolio-screen.tsx',
+    '../components/retropick/screens/markets-screen.tsx',
+    '../components/retropick/bottom-nav.tsx',
+    '../components/retropick/drawer-menu.tsx',
+    '../android/app/src/main/java/com/retropick/app/MainActivity.java',
+    '../android/app/src/main/java/com/retropick/core/network/RuntimeConfigPlugin.java',
+  ]
+  const sources = await Promise.all(sourcePaths.map((path) => fs.readFile(new URL(path, import.meta.url), 'utf8')))
+  const [shell, intelligence, detail, explore, portfolio, marketsScreen, navigation, drawer, mainActivity, runtimePlugin] = sources
+  const reachableUi = [shell, intelligence, detail, explore, portfolio, marketsScreen, navigation, drawer].join('\n')
+
+  assert.match(shell, /RealtimeClient/)
+  assert.match(shell, /runtimeConfig\.wsUrl/)
+  assert.match(shell, /awaitRealtimeVerification/)
+  assert.match(shell, /liveMarkets\.length === 0/)
+  assert.doesNotMatch(reachableUi, /WHALE_FEEDS|LEADERBOARD_TRADERS|TRENDING_TRADERS|TRENDING_MARKETS|simulatedFills|paperPortfolio|LimitOrderModal|markets = MARKETS|FEATURED|AI_INSIGHTS|const NEWS|Place Trade|Deposit|Withdraw/i)
+  assert.doesNotMatch(reachableUi, /\bMARKETS\.filter/)
+  assert.doesNotMatch(detail, /onExecuteTrade|onTrade|onSetAlert|Related Events|MARKETS/)
+  assert.doesNotMatch(explore, /markets\?\?\s*MARKETS|targetMarket.*\|\|.*markets\[/)
+  assert.doesNotMatch(mainActivity, /WhaleAlertsPlugin/)
+  assert.match(mainActivity, /RuntimeConfigPlugin\.class/)
+  assert.match(runtimePlugin, /BffRuntimeConfig\.fromBuildConfig\(\)/)
 })

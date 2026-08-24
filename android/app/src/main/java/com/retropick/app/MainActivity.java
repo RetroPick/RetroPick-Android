@@ -11,13 +11,12 @@ import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 import com.retropick.core.network.RuntimeConfigPlugin;
-import com.retropick.core.notification.WhaleAlertsPlugin;
 import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends BridgeActivity {
     static final List<Class<? extends Plugin>> BRIDGE_PLUGINS =
-            Arrays.asList(RuntimeConfigPlugin.class, WhaleAlertsPlugin.class);
+            Arrays.asList(RuntimeConfigPlugin.class);
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

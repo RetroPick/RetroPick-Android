@@ -45,6 +45,8 @@ export type Market = {
   description?: string
   resolutionSource?: string
   tags?: string[]
+  /** BFF-provided token used only to verify the BFF realtime stream. */
+  realtimeTokenId?: string
 }
 
 export const CATEGORIES: Category[] = [

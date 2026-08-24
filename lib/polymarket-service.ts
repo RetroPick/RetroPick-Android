@@ -291,16 +291,22 @@ export function extractSubTags(
   return result
 }
 
+export class MarketDataUnavailableError extends Error {
+  constructor(message: string) { super(message); this.name = 'MarketDataUnavailableError' }
+}
+
 export async function fetchLivePolymarketMarkets(bffUrl = process.env.NEXT_PUBLIC_BFF_HTTP_URL): Promise<Market[]> {
-  if (!bffUrl) return []
+  if (!bffUrl) throw new MarketDataUnavailableError('Market data is unavailable: BFF URL is missing')
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
     const response = await fetch(`${bffUrl.replace(/\/$/, '')}/markets`, { credentials: 'include', signal: controller.signal, headers: { Accept: 'application/json' } })
-    clearTimeout(timeoutId)
-    if (!response.ok) return []
-    const data = await response.json()
-    const rawMarkets = Array.isArray(data) ? data : data?.data || data?.markets || []
+    if (!response.ok) throw new MarketDataUnavailableError(`Market data is unavailable: BFF returned HTTP ${response.status}`)
+    const data: unknown = await response.json()
+    const rawMarkets = Array.isArray(data) ? data :
+      (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) ? (data as { data: unknown[] }).data :
+      (data && typeof data === 'object' && Array.isArray((data as { markets?: unknown }).markets)) ? (data as { markets: unknown[] }).markets : null
+    if (!rawMarkets) throw new MarketDataUnavailableError('Market data is unavailable: BFF response is malformed')
     return rawMarkets.map((m: any, idx: number): Market | null => {
       // 1. Parse question and exclude political, pardon, or election markets
       const qLower = (m.question || '').toLowerCase()
@@ -420,8 +426,9 @@ export async function fetchLivePolymarketMarkets(bffUrl = process.env.NEXT_PUBLI
       else if (qLower.includes('openai') || qLower.includes('gpt')) icon = 'OPENAI'
       else if (qLower.includes('xrp')) icon = 'XRP'
 
-      // Extract official Polymarket event/person image URL
-      const officialImage = m.image || m.icon || (m.events && m.events[0] && (m.events[0].image || m.events[0].icon)) || undefined
+      const rawTokenIds = typeof m.clobTokenIds === 'string' ? (() => { try { return JSON.parse(m.clobTokenIds) } catch { return [] } })() : m.clobTokenIds
+      const realtimeTokenId = typeof m.tokenId === 'string' && m.tokenId ? m.tokenId :
+        Array.isArray(rawTokenIds) && typeof rawTokenIds[0] === 'string' && rawTokenIds[0] ? rawTokenIds[0] : undefined
 
       return {
         id: m.id || m.slug || String(idx),
@@ -438,12 +445,15 @@ export async function fetchLivePolymarketMarkets(bffUrl = process.env.NEXT_PUBLI
         chart: chartPoints,
         verified: true,
         icon,
-        image: officialImage,
+        realtimeTokenId,
         options
       }
     }).filter((m: Market | null): m is Market => m !== null)
   } catch (error) {
-    return []
+    if (error instanceof MarketDataUnavailableError) throw error
+    throw new MarketDataUnavailableError(`Market data is unavailable: ${error instanceof Error ? error.message : 'request failed'}`)
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 

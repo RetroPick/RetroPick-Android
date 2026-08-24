@@ -1,4 +1,4 @@
-import type { ReconcilerState } from './realtime-client.ts'
+import type { ReconcilerState, RealtimeClient } from './realtime-client.ts'
 
 /** Fails closed unless the current transport cycle has produced a synchronized snapshot. */
 export class ReleaseReadinessGate {
@@ -13,4 +13,10 @@ export class ReleaseReadinessGate {
   }
 
   isReady() { return this.ready }
+}
+
+/** Connects the release UI's readiness state directly to the live transport. */
+export function bindReleaseReadiness(realtime: Pick<RealtimeClient, 'onStateChange'>, publish: (ready: boolean) => void) {
+  const gate = new ReleaseReadinessGate(publish)
+  return realtime.onStateChange((state) => gate.consume(state))
 }

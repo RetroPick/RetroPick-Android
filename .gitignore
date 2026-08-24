@@ -16,6 +16,7 @@ node_modules
 
 # Reproducible Next/Capacitor build output. Never commit generated release assets.
 out/
+*.tsbuildinfo
 android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/
 android/app/build/

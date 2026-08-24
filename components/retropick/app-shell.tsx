@@ -5,7 +5,7 @@ import type { ReleaseMarket } from '@/lib/release-market'
 import { fetchReleaseMarkets } from '@/lib/release-market'
 import { MarketsTerminalClient } from '@/lib/markets-terminal-client'
 import { RealtimeClient } from '@/lib/realtime-client'
-import { ReleaseReadinessGate } from '@/lib/release-readiness'
+import { bindReleaseReadiness } from '@/lib/release-readiness'
 import { loadRuntimeConfig } from '@/lib/runtime-config-loader'
 import { ReleaseMarketList } from './screens/release-market-list'
 import { ReleaseMarketDetail } from './screens/release-market-detail'
@@ -37,13 +37,12 @@ export function AppShell() {
         const verifiedMarket = liveMarkets.find((market) => market.realtimeTokenId)
         if (!verifiedMarket) throw new Error('BFF market data has no realtime token')
         realtime = new RealtimeClient({ url: runtimeConfig.wsUrl })
-        const gate = new ReleaseReadinessGate((isReady) => {
+        stopStateListener = bindReleaseReadiness(realtime, (isReady) => {
           if (!active) return
           if (!isReady) { failClosed(); return }
           setMarkets(liveMarkets)
           setReady(true)
         })
-        stopStateListener = realtime.onStateChange((state) => gate.consume(state))
         realtime.subscribeToken(verifiedMarket.realtimeTokenId, verifiedMarket.id)
         realtime.connect()
       } catch { failClosed() }

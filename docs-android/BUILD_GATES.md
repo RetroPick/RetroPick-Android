@@ -4,7 +4,7 @@ RetroPick Android is a Capacitor wrapper over the web app and uses the same Go B
 
 ## Required local gate
 
-Run the reproducible gate only from a disposable, clean worktree:
+Run the reproducible gate only from a clean source worktree. The script creates and removes its own fresh detached disposable worktree, so generated ignored output cannot touch your source worktree:
 
 ```bash
 pnpm run verify:android

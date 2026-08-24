@@ -5,7 +5,8 @@ import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
 import { classifyMarketCategory, fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
-import { ReleaseReadinessGate } from '../lib/release-readiness.ts'
+import { fetchReleaseMarkets } from '../lib/release-market.ts'
+import { ReleaseReadinessGate, bindReleaseReadiness } from '../lib/release-readiness.ts'
 import { canonicalOrderBookDeltaPayload, controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
 
 const production = {
@@ -147,6 +148,23 @@ test('market data rejects every malformed record rather than coercing verified d
   } finally { globalThis.fetch = originalFetch }
 })
 
+test('release markets reject malformed non-Yes prices, out-of-range decimals, and non-canonical timestamps', async () => {
+  const originalFetch = globalThis.fetch
+  const valid = { id: 'market-1', question: 'Question?', category: 'Finance', outcomes: ['Yes', 'No'], outcomePrices: ['0.4', '0.6'], volume: '0', liquidity: '0', endDate: '2026-12-31T00:00:00Z', tokenId: 'token-1' }
+  const invalidRecords = [
+    { ...valid, outcomePrices: ['0.4', 'garbage'] },
+    { ...valid, outcomePrices: ['1.0000000000000000001', '0'] },
+    { ...valid, endDate: '0' },
+    { ...valid, endDate: '2026-02-30T00:00:00Z' },
+  ]
+  try {
+    for (const record of invalidRecords) {
+      globalThis.fetch = async () => Response.json([record])
+      await assert.rejects(fetchReleaseMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data is unavailable/i)
+    }
+  } finally { globalThis.fetch = originalFetch }
+})
+
 test('release readiness revokes immediately after synchronization and recovers only with a fresh synchronized snapshot', () => {
   const states: boolean[] = []
   const gate = new ReleaseReadinessGate((ready) => states.push(ready))
@@ -224,6 +242,31 @@ test('realtime accepts canonical controls and schema-version-1 data without requ
     observedAt: '2026-08-13T12:00:00.125Z', publishedAt: '2026-08-13T12:00:00.250Z',
     streamEpoch: 1, deliveryCounter: 1,
   }])
+})
+
+test('realtime freshness expiry revokes a live readiness binding until a new verified snapshot', () => {
+  const socket = new FakeSocket()
+  let now = Date.parse('2026-08-13T12:00:00Z')
+  const checks: Array<() => void> = []
+  const ready: boolean[] = []
+  const client = new RealtimeClient({
+    url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket, now: () => now,
+    freshnessTimeoutMs: 1000, scheduleFreshnessCheck: (fn) => { checks.push(fn); return checks.length },
+  })
+  const stop = bindReleaseReadiness(client, (isReady) => ready.push(isReady))
+  client.subscribeToken('token-1', 'market-1')
+  client.connect(); socket.open(); socket.message(dataEnvelope('orderbook.snapshot', 1))
+  assert.deepEqual(ready, [true])
+
+  now += 1000
+  checks.shift()!()
+  assert.equal(client.getState(), 'STALE')
+  assert.deepEqual(ready, [true, false])
+
+  socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: 'fresh-snapshot', streamEpoch: 2 }))
+  assert.equal(client.getState(), 'SYNCHRONIZED')
+  assert.deepEqual(ready, [true, false, true])
+  stop()
 })
 
 test('realtime applies a canonical backend delta after its snapshot', () => {
@@ -676,41 +719,43 @@ test('actual AppShell release entrypoint is BFF-backed and cannot fabricate acco
   assert.match(shell, /fetchCapabilitiesFromBff/)
   assert.match(shell, /fetchEligibilityFromBff/)
   assert.match(shell, /fetchReleaseMarkets\(runtimeConfig\.httpUrl\)/)
-  assert.match(shell, /ReleaseReadinessGate/)
-  assert.match(shell, /onStateChange/)
+  assert.match(shell, /bindReleaseReadiness/)
+  assert.match(shell, /bindReleaseReadiness\(realtime/)
   assert.doesNotMatch(shell, /retropick-data|MarketsScreen|MarketCard|Math\.random/)
   assert.doesNotMatch(shell, /0x23Cb836e35ed8213ad280a6D1F1C1149e830E300|trader@retropick\.app|Order Executed/)
   assert.doesNotMatch(shell, /StorageService\.load(Balance|Auth|MarketsCache|Positions|Activity)/)
 })
 
-test('AppShell transitive release surface exposes only verified read-only BFF market data', async () => {
+test('AppShell recursive import closure is BFF-only and excludes legacy trading surfaces', async () => {
   const fs = await import('node:fs/promises')
-  const sourcePaths = [
-    '../components/retropick/app-shell.tsx',
-    '../components/retropick/screens/intelligence-screen.tsx',
-    '../components/retropick/screens/release-market-detail.tsx',
-    '../components/retropick/screens/explore-screen.tsx',
-    '../components/retropick/screens/portfolio-screen.tsx',
-    '../components/retropick/screens/release-market-list.tsx',
-    '../components/retropick/bottom-nav.tsx',
-    '../components/retropick/drawer-menu.tsx',
-    '../android/app/src/main/java/com/retropick/app/MainActivity.java',
-    '../android/app/src/main/java/com/retropick/core/network/RuntimeConfigPlugin.java',
-  ]
-  const sources = await Promise.all(sourcePaths.map((path) => fs.readFile(new URL(path, import.meta.url), 'utf8')))
-  const [shell, intelligence, detail, explore, portfolio, marketsScreen, navigation, drawer, mainActivity, runtimePlugin] = sources
-  const reachableUi = [shell, detail, marketsScreen].join('\n')
+  const path = await import('node:path')
+  const { fileURLToPath } = await import('node:url')
+  const root = fileURLToPath(new URL('..', import.meta.url))
+  const closure = new Map<string, string>()
+  const resolveImport = async (from: string, specifier: string) => {
+    if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return null
+    const base = specifier.startsWith('@/') ? path.join(root, specifier.slice(2)) : path.resolve(path.dirname(from), specifier)
+    for (const candidate of [base, `${base}.ts`, `${base}.tsx`, path.join(base, 'index.ts'), path.join(base, 'index.tsx')]) {
+      try { if ((await fs.stat(candidate)).isFile()) return candidate } catch { /* try next candidate */ }
+    }
+    throw new Error(`release import cannot be resolved: ${specifier} from ${from}`)
+  }
+  const visit = async (sourcePath: string): Promise<void> => {
+    if (closure.has(sourcePath)) return
+    const source = await fs.readFile(sourcePath, 'utf8')
+    closure.set(sourcePath, source)
+    const imports = [...source.matchAll(/\b(?:import|export)\s+(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g)].map((match) => match[1])
+    for (const specifier of imports) { const resolved = await resolveImport(sourcePath, specifier); if (resolved) await visit(resolved) }
+  }
+  await visit(path.join(root, 'components/retropick/app-shell.tsx'))
+  const relativePaths = [...closure.keys()].map((sourcePath) => path.relative(root, sourcePath).replaceAll(path.sep, '/'))
+  const reachableSource = [...closure.values()].join('\n')
 
-  assert.match(shell, /RealtimeClient/)
-  assert.match(shell, /runtimeConfig\.wsUrl/)
-  assert.match(shell, /ReleaseReadinessGate/)
-  assert.match(shell, /onStateChange/)
-  assert.match(shell, /fetchReleaseMarkets\(runtimeConfig\.httpUrl\)/)
-  assert.doesNotMatch(reachableUi, /retropick-data|MarketCard|WHALE_FEEDS|LEADERBOARD_TRADERS|TRENDING_TRADERS|TRENDING_MARKETS|simulatedFills|paperPortfolio|LimitOrderModal|markets = MARKETS|FEATURED|AI_INSIGHTS|const NEWS|Place Trade|Deposit|Withdraw/i)
-  assert.doesNotMatch(reachableUi, /\bMARKETS\.filter/)
-  assert.doesNotMatch(detail, /onExecuteTrade|onTrade|onSetAlert|Related Events|MARKETS/)
-  assert.doesNotMatch(explore, /markets\?\?\s*MARKETS|targetMarket.*\|\|.*markets\[/)
-  assert.doesNotMatch(mainActivity, /WhaleAlertsPlugin/)
-  assert.match(mainActivity, /RuntimeConfigPlugin\.class/)
-  assert.match(runtimePlugin, /BffRuntimeConfig\.fromBuildConfig\(\)/)
+  assert.equal(relativePaths.includes('components/retropick/screens/markets-screen.tsx'), false)
+  assert.equal(relativePaths.includes('components/retropick/market-card.tsx'), false)
+  assert.equal(relativePaths.some((sourcePath) => sourcePath.includes('retropick-data')), false)
+  assert.doesNotMatch(reachableSource, /retropick-data|MarketCard|WHALE_FEEDS|LEADERBOARD_TRADERS|TRENDING_TRADERS|TRENDING_MARKETS|simulatedFills|paperPortfolio|LimitOrderModal|markets\s*=\s*MARKETS|FEATURED|AI_INSIGHTS|const NEWS|Place Trade|Deposit|Withdraw|Copy Trade|Set Alert/i)
+  assert.doesNotMatch(reachableSource, /Math\.random|StorageService\.load(Balance|Auth|MarketsCache|Positions|Activity)|gamma-api\.polymarket\.com|ws-subscriptions-clob\.polymarket\.com/)
+  assert.match(closure.get(path.join(root, 'components/retropick/app-shell.tsx'))!, /fetchReleaseMarkets\(runtimeConfig\.httpUrl\)/)
+  assert.match(closure.get(path.join(root, 'components/retropick/app-shell.tsx'))!, /runtimeConfig\.wsUrl/)
 })

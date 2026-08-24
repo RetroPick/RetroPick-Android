@@ -15,7 +15,27 @@ export class MarketDataUnavailableError extends Error {
 
 const fixedPoint = /^(0|[1-9][0-9]*)(?:\.[0-9]+)?$/
 const canonicalId = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/
+const rfc3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/
 const nonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+const compareFixedPoint = (left: string, right: string) => {
+  const [leftWhole, leftFraction = ''] = left.split('.')
+  const [rightWhole, rightFraction = ''] = right.split('.')
+  if (leftWhole.length !== rightWhole.length) return leftWhole.length < rightWhole.length ? -1 : 1
+  if (leftWhole !== rightWhole) return leftWhole < rightWhole ? -1 : 1
+  const width = Math.max(leftFraction.length, rightFraction.length)
+  const a = leftFraction.padEnd(width, '0'); const b = rightFraction.padEnd(width, '0')
+  return a === b ? 0 : a < b ? -1 : 1
+}
+const isCanonicalRfc3339 = (value: unknown): value is string => {
+  if (typeof value !== 'string') return false
+  const match = rfc3339.exec(value)
+  if (!match || !Number.isFinite(Date.parse(value))) return false
+  const [, year, month, day, hour, minute, second, offsetHour, offsetMinute] = match
+  const daysInMonth = new Date(Date.UTC(Number(year), Number(month), 0)).getUTCDate()
+  return Number(month) >= 1 && Number(month) <= 12 && Number(day) >= 1 && Number(day) <= daysInMonth &&
+    Number(hour) <= 23 && Number(minute) <= 59 && Number(second) <= 59 &&
+    (offsetHour === undefined || (Number(offsetHour) <= 23 && Number(offsetMinute) <= 59))
+}
 const parseArray = (value: unknown, field: string): unknown[] => {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
@@ -23,8 +43,10 @@ const parseArray = (value: unknown, field: string): unknown[] => {
   }
   throw new MarketDataUnavailableError(`${field} is malformed`)
 }
-const positiveFixedPoint = (value: unknown, field: string) => {
-  if (!nonEmptyString(value) || !fixedPoint.test(value) || Number(value) < 0) throw new MarketDataUnavailableError(`${field} is malformed`)
+const fixedPointValue = (value: unknown, field: string, max?: string) => {
+  if (!nonEmptyString(value) || !fixedPoint.test(value) || (max !== undefined && compareFixedPoint(value, max) > 0)) {
+    throw new MarketDataUnavailableError(`${field} is malformed`)
+  }
   return value
 }
 
@@ -37,18 +59,18 @@ function recordToMarket(value: unknown): ReleaseMarket {
   const realtimeTokenId = record.tokenId
   const endsAt = record.endDate
   if (!nonEmptyString(id) || !canonicalId.test(id) || !nonEmptyString(question) || !nonEmptyString(category) ||
-      !nonEmptyString(realtimeTokenId) || !canonicalId.test(realtimeTokenId) || !nonEmptyString(endsAt) || !Number.isFinite(Date.parse(endsAt))) {
+      !nonEmptyString(realtimeTokenId) || !canonicalId.test(realtimeTokenId) || !isCanonicalRfc3339(endsAt)) {
     throw new MarketDataUnavailableError('market record has missing required fields')
   }
   const outcomes = parseArray(record.outcomes, 'outcomes')
   const prices = parseArray(record.outcomePrices, 'outcomePrices')
   if (outcomes.length < 2 || outcomes.length !== prices.length || !outcomes.every(nonEmptyString)) throw new MarketDataUnavailableError('outcomes are malformed')
+  const validatedPrices = prices.map((price) => fixedPointValue(price, 'outcome price', '1'))
   const yesIndex = outcomes.findIndex((outcome) => outcome.toLowerCase() === 'yes')
   if (yesIndex < 0) throw new MarketDataUnavailableError('yes outcome is required')
-  const yesPrice = positiveFixedPoint(prices[yesIndex], 'outcome price')
-  if (Number(yesPrice) > 1) throw new MarketDataUnavailableError('outcome price is outside the probability range')
-  const volume = positiveFixedPoint(record.volume, 'volume')
-  const liquidity = positiveFixedPoint(record.liquidity, 'liquidity')
+  const yesPrice = validatedPrices[yesIndex]
+  const volume = fixedPointValue(record.volume, 'volume')
+  const liquidity = fixedPointValue(record.liquidity, 'liquidity')
   return { id, question: question.trim(), category: category.trim(), yesPrice, volume, liquidity, endsAt, realtimeTokenId }
 }
 

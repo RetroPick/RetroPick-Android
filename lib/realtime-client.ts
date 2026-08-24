@@ -1,6 +1,6 @@
 'use client'
 
-export type ReconcilerState = 'UNINITIALIZED' | 'SNAPSHOT_LOADING' | 'SYNCHRONIZED' | 'DEGRADED' | 'RESYNC_REQUIRED'
+export type ReconcilerState = 'UNINITIALIZED' | 'SNAPSHOT_LOADING' | 'SYNCHRONIZED' | 'STALE' | 'DEGRADED' | 'RESYNC_REQUIRED'
 export type RealtimeEventType =
   | 'hello' | 'subscribed' | 'unsubscribed' | 'orderbook.snapshot' | 'orderbook.delta'
   | 'trade.executed' | 'market.tick_size_changed' | 'market.updated' | 'signal.created'
@@ -34,8 +34,10 @@ type Options = {
   url: string
   socketFactory?: (url: string) => WebSocketLike
   scheduleReconnect?: (fn: () => void, delayMs: number) => unknown
+  scheduleFreshnessCheck?: (fn: () => void, delayMs: number) => unknown
   now?: () => number
   reconnectDelayMs?: number
+  freshnessTimeoutMs?: number
 }
 type Subscription = { tokenId: string; marketId: string }
 type SubscriptionReconciliation = {
@@ -74,6 +76,8 @@ export class RealtimeClient {
   private state: ReconcilerState = 'UNINITIALIZED'
   private latencyMs: number | null = null
   private reconnectPending = false
+  private freshnessCheckPending = false
+  private lastVerifiedAt: number | null = null
   private readonly subscriptions = new Map<string, Subscription>()
   private readonly reconciliation = new Map<string, SubscriptionReconciliation>()
   private readonly stateListeners = new Set<(state: ReconcilerState, latencyMs: number | null) => void>()
@@ -274,7 +278,9 @@ export class RealtimeClient {
   }
   private acceptOrderBook(envelope: DataEnvelope, reconciliation: SubscriptionReconciliation, observedAt: number) {
     this.acceptEnvelope(envelope, reconciliation, observedAt)
+    this.lastVerifiedAt = this.now()
     this.refreshState()
+    this.scheduleFreshnessCheck()
     this.orderBookListeners.forEach((fn) => fn({
       marketId: envelope.marketId, tokenId: envelope.tokenId,
       bids: reconciliation.bids.map((level) => ({ ...level })), asks: reconciliation.asks.map((level) => ({ ...level })),
@@ -314,6 +320,20 @@ export class RealtimeClient {
       Number(minute) <= 59 && Number(second) <= 59 &&
       (offsetHour === undefined || (Number(offsetHour) <= 23 && Number(offsetMinute) <= 59))
   }
+  private scheduleFreshnessCheck() {
+    if (this.freshnessCheckPending || this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
+    this.freshnessCheckPending = true
+    const schedule = this.options.scheduleFreshnessCheck ?? ((fn: () => void, delay: number) => setTimeout(fn, delay))
+    const check = () => {
+      this.freshnessCheckPending = false
+      if (this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
+      const remaining = this.freshnessTimeoutMs() - (this.now() - this.lastVerifiedAt)
+      if (remaining <= 0) { this.setState('STALE'); return }
+      this.scheduleFreshnessCheck()
+    }
+    schedule(check, this.freshnessTimeoutMs())
+  }
+  private freshnessTimeoutMs() { return this.options.freshnessTimeoutMs ?? 30000 }
   private scheduleReconnect() {
     if (this.reconnectPending) return
     this.reconnectPending = true

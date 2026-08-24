@@ -601,3 +601,26 @@ test('production sources contain no direct Gamma/CLOB transport or unconditional
   assert.doesNotMatch(joined, /gamma-api\.polymarket\.com|ws-subscriptions-clob\.polymarket\.com|corsproxy\.io/)
   assert.doesNotMatch(joined, /startSimulationStream|activateSimulationMode/)
 })
+
+test('actual AppShell release entrypoint is BFF-backed and cannot fabricate account or order truth', async () => {
+  const fs = await import('node:fs/promises')
+  const [shell, loader, mainActivity, runtimePlugin] = await Promise.all([
+    '../components/retropick/app-shell.tsx',
+    '../lib/runtime-config-loader.ts',
+    '../android/app/src/main/java/com/retropick/app/MainActivity.java',
+    '../android/app/src/main/java/com/retropick/core/network/RuntimeConfigPlugin.java',
+  ].map((path) => fs.readFile(new URL(path, import.meta.url), 'utf8'))
+  )
+  assert.match(shell, /loadRuntimeConfig/)
+  assert.match(loader, /RuntimeConfig/)
+  assert.match(mainActivity, /RuntimeConfigPlugin\.class/)
+  assert.match(runtimePlugin, /BffRuntimeConfig\.fromBuildConfig\(\)/)
+  assert.match(runtimePlugin, /available/)
+  assert.match(shell, /MarketsTerminalClient/)
+  assert.match(shell, /fetchCapabilitiesFromBff/)
+  assert.match(shell, /fetchEligibilityFromBff/)
+  assert.match(shell, /fetchLivePolymarketMarkets\(runtimeConfig\.httpUrl\)/)
+  assert.doesNotMatch(shell, /Math\.random/)
+  assert.doesNotMatch(shell, /0x23Cb836e35ed8213ad280a6D1F1C1149e830E300|trader@retropick\.app|Order Executed/)
+  assert.doesNotMatch(shell, /StorageService\.load(Balance|Auth|MarketsCache|Positions|Activity)/)
+})

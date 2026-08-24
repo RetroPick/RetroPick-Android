@@ -269,6 +269,47 @@ test('realtime freshness expiry revokes a live readiness binding until a new ver
   stop()
 })
 
+test('realtime stale or transport error rejects deltas until a fresh snapshot restores the live readiness binding', () => {
+  for (const failure of ['stale', 'error'] as const) {
+    const socket = new FakeSocket()
+    let now = Date.parse('2026-08-13T12:00:00Z')
+    const checks: Array<() => void> = []
+    const ready: boolean[] = []
+    const client = new RealtimeClient({
+      url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket, now: () => now,
+      freshnessTimeoutMs: 1000, scheduleFreshnessCheck: (fn) => { checks.push(fn); return checks.length },
+    })
+    const stop = bindReleaseReadiness(client, (isReady) => ready.push(isReady))
+    client.subscribeToken('token-1', 'market-1')
+    client.connect(); socket.open(); socket.message(dataEnvelope('orderbook.snapshot', 1))
+
+    if (failure === 'stale') {
+      now += 1000
+      checks.shift()!()
+      assert.equal(client.getState(), 'STALE')
+    } else {
+      socket.onerror?.()
+      assert.equal(client.getState(), 'DEGRADED')
+    }
+    assert.deepEqual(ready, [true, false], `${failure} must immediately revoke live readiness`)
+
+    socket.message(dataEnvelope('orderbook.delta', 2, { eventId: `${failure}-delta`, payload:
+      canonicalOrderBookDeltaPayload({ NextHash: `${failure}-hash-2` }),
+    }))
+    assert.notEqual(client.getState(), 'SYNCHRONIZED', `${failure} must require a new snapshot, not accept a delta`)
+    assert.deepEqual(ready, [true, false], `${failure} delta must not restore readiness`)
+
+    socket.message(dataEnvelope('orderbook.snapshot', 1, { eventId: `${failure}-recovery`, streamEpoch: 2, payload: {
+      hash: `${failure}-recovery-hash`, timestamp: '2026-08-13T12:00:01.125Z',
+      bids: [{ price: '0.4', size: '2' }], asks: [{ price: '0.6', size: '3' }],
+    } }))
+    assert.equal(client.getState(), 'SYNCHRONIZED', `${failure} recovery snapshot restores readiness`)
+    assert.deepEqual(ready, [true, false, true], `${failure} recovery requires a verified snapshot`)
+    stop()
+    client.dispose()
+  }
+})
+
 test('realtime freshness reschedules only the remaining liveness interval after a newer snapshot', () => {
   const socket = new FakeSocket()
   let now = 0

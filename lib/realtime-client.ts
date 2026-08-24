@@ -305,6 +305,10 @@ export class RealtimeClient {
     reconciliation.state = 'RESYNC_REQUIRED'
     this.refreshState()
   }
+  /** A transport fault makes all cached books untrusted until a new snapshot validates them. */
+  private invalidateSnapshotAuthority() {
+    this.reconciliation.forEach((_reconciliation, key) => this.reconciliation.set(key, this.newReconciliation()))
+  }
   private isDecimal(value: string) { return /^(0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value) }
   private isProbability(value: string) { return this.compareDecimal(value, '1') <= 0 }
   private compareDecimal(left: string, right: string) {
@@ -345,7 +349,7 @@ export class RealtimeClient {
   private scheduleFreshnessCheck() {
     if (this.freshnessCheckPending || this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
     const remaining = this.freshnessTimeoutMs() - (this.now() - this.lastVerifiedAt)
-    if (remaining <= 0) { this.setState('STALE'); return }
+    if (remaining <= 0) { this.invalidateSnapshotAuthority(); this.setState('STALE'); return }
     this.freshnessCheckPending = true
     const defaultSchedule = (fn: () => void, delay: number) => {
       const handle = setTimeout(fn, delay)
@@ -385,6 +389,7 @@ export class RealtimeClient {
   }
   private setDegraded() {
     const hasResyncRequired = [...this.reconciliation.values()].some((value) => value.state === 'RESYNC_REQUIRED')
+    this.invalidateSnapshotAuthority()
     this.setState(hasResyncRequired ? 'RESYNC_REQUIRED' : 'DEGRADED')
   }
   private setState(state: ReconcilerState) {

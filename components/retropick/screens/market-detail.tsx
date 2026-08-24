@@ -1,8 +1,0 @@
-'use client'
-
-import { ArrowLeft, Clock, TrendingUp } from 'lucide-react'
-import { type Market } from '@/lib/retropick-data'
-
-export function MarketDetail({ market, onBack }: { market: Market; onBack: () => void }) {
-  return <article className="space-y-5 px-4 py-5"><button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground"><ArrowLeft className="h-4 w-4" /> Markets</button><header className="space-y-2"><p className="text-xs font-bold uppercase text-primary">{market.category}</p><h1 className="text-xl font-bold">{market.question}</h1><p className="text-sm text-muted-foreground">BFF-provided market information. This Android release is read-only.</p></header><section className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4 text-sm"><div><p className="text-muted-foreground">Probability</p><p className="text-xl font-bold">{market.yes}%</p></div><div><p className="text-muted-foreground">Volume</p><p className="text-xl font-bold">{market.volume}</p></div><div className="flex items-center gap-2 text-muted-foreground"><Clock className="h-4 w-4" />{market.timeLeft}</div><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" />{market.liquidity} liquidity</div></section>{market.options && market.options.length > 0 && <section className="space-y-2"><h2 className="font-semibold">Outcomes</h2>{market.options.map((option) => <div key={option.label} className="flex justify-between rounded-lg border border-border px-3 py-2 text-sm"><span>{option.label}</span><span className="font-bold">{option.percentage}%</span></div>)}</section>}</article>
-}

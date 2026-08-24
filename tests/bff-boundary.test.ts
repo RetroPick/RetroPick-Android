@@ -5,6 +5,7 @@ import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
 import { classifyMarketCategory, fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
+import { ReleaseReadinessGate } from '../lib/release-readiness.ts'
 import { canonicalOrderBookDeltaPayload, controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
 
 const production = {
@@ -98,7 +99,7 @@ test('Polymarket market BFF request explicitly includes session-cookie credentia
   let requestInit: RequestInit | undefined
   globalThis.fetch = async (_url, init) => {
     requestInit = init
-    return Response.json([])
+    return Response.json([{ id: 'market-1', question: 'Question?', category: 'Finance', outcomes: ['Yes', 'No'], outcomePrices: ['0.4', '0.6'], volume: '0', liquidity: '0', endDate: '2026-12-31T00:00:00Z', tokenId: 'token-1' }])
   }
 
   try {
@@ -126,6 +127,35 @@ test('market data fetch fails closed for timeout, non-OK, and malformed BFF resp
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('market data rejects every malformed record rather than coercing verified defaults', async () => {
+  const originalFetch = globalThis.fetch
+  const invalidRecords = [
+    {},
+    { id: 'market-1', question: '', outcomes: ['Yes', 'No'], outcomePrices: ['0.4', '0.6'], clobTokenIds: ['token-1'] },
+    { id: 'market-1', question: 'Question?', outcomes: ['Yes', 'No'], outcomePrices: ['0.4e0', '0.6'], clobTokenIds: ['token-1'] },
+    { id: 'market-1', question: 'Question?', outcomes: ['Yes', 'No'], outcomePrices: ['0.4', '0.6'] },
+  ]
+  try {
+    for (const record of invalidRecords) {
+      globalThis.fetch = async () => Response.json([record])
+      await assert.rejects(fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data is unavailable/i)
+    }
+    globalThis.fetch = async () => Response.json([])
+    await assert.rejects(fetchLivePolymarketMarkets(production.NEXT_PUBLIC_BFF_HTTP_URL), /market data is unavailable/i)
+  } finally { globalThis.fetch = originalFetch }
+})
+
+test('release readiness revokes immediately after synchronization and recovers only with a fresh synchronized snapshot', () => {
+  const states: boolean[] = []
+  const gate = new ReleaseReadinessGate((ready) => states.push(ready))
+  gate.consume('SYNCHRONIZED')
+  gate.consume('DEGRADED')
+  gate.consume('SYNCHRONIZED')
+  gate.consume('RESYNC_REQUIRED')
+  gate.consume('SYNCHRONIZED')
+  assert.deepEqual(states, [true, false, true, false, true])
 })
 
 test('market classification retains supported science and stocks categories', () => {
@@ -608,6 +638,14 @@ test('realtime isolates gaps, stale events, reconnect resets, and exact unsubscr
   assert.equal(client.getState(), 'SYNCHRONIZED')
 })
 
+test('generated release output is not tracked in Git', async () => {
+  const { execFile } = await import('node:child_process')
+  const { promisify } = await import('node:util')
+  const run = promisify(execFile)
+  const { stdout } = await run('git', ['ls-files', 'out', 'android/app/src/main/assets/public'], { cwd: new URL('..', import.meta.url) })
+  assert.equal(stdout.trim(), '')
+})
+
 test('production sources contain no direct Gamma/CLOB transport or unconditional simulation', async () => {
   const fs = await import('node:fs/promises')
   const sources = await Promise.all([
@@ -637,8 +675,10 @@ test('actual AppShell release entrypoint is BFF-backed and cannot fabricate acco
   assert.match(shell, /MarketsTerminalClient/)
   assert.match(shell, /fetchCapabilitiesFromBff/)
   assert.match(shell, /fetchEligibilityFromBff/)
-  assert.match(shell, /fetchLivePolymarketMarkets\(runtimeConfig\.httpUrl\)/)
-  assert.doesNotMatch(shell, /Math\.random/)
+  assert.match(shell, /fetchReleaseMarkets\(runtimeConfig\.httpUrl\)/)
+  assert.match(shell, /ReleaseReadinessGate/)
+  assert.match(shell, /onStateChange/)
+  assert.doesNotMatch(shell, /retropick-data|MarketsScreen|MarketCard|Math\.random/)
   assert.doesNotMatch(shell, /0x23Cb836e35ed8213ad280a6D1F1C1149e830E300|trader@retropick\.app|Order Executed/)
   assert.doesNotMatch(shell, /StorageService\.load(Balance|Auth|MarketsCache|Positions|Activity)/)
 })
@@ -648,10 +688,10 @@ test('AppShell transitive release surface exposes only verified read-only BFF ma
   const sourcePaths = [
     '../components/retropick/app-shell.tsx',
     '../components/retropick/screens/intelligence-screen.tsx',
-    '../components/retropick/screens/market-detail.tsx',
+    '../components/retropick/screens/release-market-detail.tsx',
     '../components/retropick/screens/explore-screen.tsx',
     '../components/retropick/screens/portfolio-screen.tsx',
-    '../components/retropick/screens/markets-screen.tsx',
+    '../components/retropick/screens/release-market-list.tsx',
     '../components/retropick/bottom-nav.tsx',
     '../components/retropick/drawer-menu.tsx',
     '../android/app/src/main/java/com/retropick/app/MainActivity.java',
@@ -659,13 +699,14 @@ test('AppShell transitive release surface exposes only verified read-only BFF ma
   ]
   const sources = await Promise.all(sourcePaths.map((path) => fs.readFile(new URL(path, import.meta.url), 'utf8')))
   const [shell, intelligence, detail, explore, portfolio, marketsScreen, navigation, drawer, mainActivity, runtimePlugin] = sources
-  const reachableUi = [shell, intelligence, detail, explore, portfolio, marketsScreen, navigation, drawer].join('\n')
+  const reachableUi = [shell, detail, marketsScreen].join('\n')
 
   assert.match(shell, /RealtimeClient/)
   assert.match(shell, /runtimeConfig\.wsUrl/)
-  assert.match(shell, /awaitRealtimeVerification/)
-  assert.match(shell, /liveMarkets\.length === 0/)
-  assert.doesNotMatch(reachableUi, /WHALE_FEEDS|LEADERBOARD_TRADERS|TRENDING_TRADERS|TRENDING_MARKETS|simulatedFills|paperPortfolio|LimitOrderModal|markets = MARKETS|FEATURED|AI_INSIGHTS|const NEWS|Place Trade|Deposit|Withdraw/i)
+  assert.match(shell, /ReleaseReadinessGate/)
+  assert.match(shell, /onStateChange/)
+  assert.match(shell, /fetchReleaseMarkets\(runtimeConfig\.httpUrl\)/)
+  assert.doesNotMatch(reachableUi, /retropick-data|MarketCard|WHALE_FEEDS|LEADERBOARD_TRADERS|TRENDING_TRADERS|TRENDING_MARKETS|simulatedFills|paperPortfolio|LimitOrderModal|markets = MARKETS|FEATURED|AI_INSIGHTS|const NEWS|Place Trade|Deposit|Withdraw/i)
   assert.doesNotMatch(reachableUi, /\bMARKETS\.filter/)
   assert.doesNotMatch(detail, /onExecuteTrade|onTrade|onSetAlert|Related Events|MARKETS/)
   assert.doesNotMatch(explore, /markets\?\?\s*MARKETS|targetMarket.*\|\|.*markets\[/)

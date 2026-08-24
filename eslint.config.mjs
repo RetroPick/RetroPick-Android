@@ -24,6 +24,9 @@ export default defineConfig([
   globalIgnores([
     '.next/**',
     'out/**',
+    'android/**/build/**',
+    'android/app/src/main/assets/public/**',
+    'android/capacitor-cordova-android-plugins/**',
     'build/**',
     'next-env.d.ts',
     'node_modules/**',

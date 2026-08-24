@@ -48,7 +48,7 @@ export function AppShell() {
       } catch { failClosed() }
     }
     initializeFromBff()
-    return () => { active = false; stopStateListener?.(); realtime?.disconnect() }
+    return () => { active = false; stopStateListener?.(); realtime?.dispose() }
   }, [])
 
   if (!ready) return <main className="grid min-h-screen place-items-center bg-[#05070a] p-6 text-center text-foreground"><section className="max-w-md rounded-xl border border-amber-500/30 bg-amber-500/10 p-5"><h1 className="text-lg font-bold text-amber-300">RetroPick unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{unavailableReason}</p></section></main>

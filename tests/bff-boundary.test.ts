@@ -269,6 +269,24 @@ test('realtime freshness expiry revokes a live readiness binding until a new ver
   stop()
 })
 
+test('realtime cancels owned freshness checks on disconnect and disposal', () => {
+  const socket = new FakeSocket()
+  const checks: Array<() => void> = []
+  const cleared: unknown[] = []
+  const client = new RealtimeClient({
+    url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket,
+    scheduleFreshnessCheck: (fn) => { checks.push(fn); return `freshness-${checks.length}` },
+    clearFreshnessCheck: (handle) => { cleared.push(handle) },
+  })
+  client.subscribeToken('token-1', 'market-1')
+  client.connect(); socket.open(); socket.message(dataEnvelope('orderbook.snapshot', 1))
+  assert.equal(checks.length, 1)
+  client.disconnect()
+  assert.deepEqual(cleared, ['freshness-1'])
+  client.dispose()
+  assert.deepEqual(cleared, ['freshness-1'])
+})
+
 test('realtime applies a canonical backend delta after its snapshot', () => {
   const socket = new FakeSocket()
   const client = new RealtimeClient({ url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket })

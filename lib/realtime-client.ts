@@ -35,6 +35,7 @@ type Options = {
   socketFactory?: (url: string) => WebSocketLike
   scheduleReconnect?: (fn: () => void, delayMs: number) => unknown
   scheduleFreshnessCheck?: (fn: () => void, delayMs: number) => unknown
+  clearFreshnessCheck?: (handle: unknown) => void
   now?: () => number
   reconnectDelayMs?: number
   freshnessTimeoutMs?: number
@@ -77,6 +78,7 @@ export class RealtimeClient {
   private latencyMs: number | null = null
   private reconnectPending = false
   private freshnessCheckPending = false
+  private freshnessCheckHandle: unknown = null
   private lastVerifiedAt: number | null = null
   private readonly subscriptions = new Map<string, Subscription>()
   private readonly reconciliation = new Map<string, SubscriptionReconciliation>()
@@ -103,11 +105,22 @@ export class RealtimeClient {
       }
       socket.onmessage = (event) => this.handleMessage(event.data)
       socket.onerror = () => this.setDegraded()
-      socket.onclose = () => { this.detachSocket(); this.setState('RESYNC_REQUIRED'); this.scheduleReconnect() }
-    } catch { this.detachSocket(); this.setState('DEGRADED'); this.scheduleReconnect() }
+      socket.onclose = () => { this.invalidateFreshness(); this.detachSocket(); this.setState('RESYNC_REQUIRED'); this.scheduleReconnect() }
+    } catch { this.invalidateFreshness(); this.detachSocket(); this.setState('DEGRADED'); this.scheduleReconnect() }
   }
 
-  public disconnect() { const socket = this.ws; this.detachSocket(); socket?.close(); this.reconnectPending = false; this.setState('UNINITIALIZED') }
+  public disconnect() {
+    const socket = this.ws
+    this.invalidateFreshness()
+    this.detachSocket()
+    socket?.close()
+    this.reconnectPending = false
+    this.setState('UNINITIALIZED')
+  }
+  public dispose() {
+    this.disconnect()
+    this.stateListeners.clear(); this.signalListeners.clear(); this.orderBookListeners.clear(); this.tradeListeners.clear()
+  }
 
   public subscribeToken(tokenId: string, marketId: string) {
     const subscription = { tokenId, marketId }
@@ -320,18 +333,32 @@ export class RealtimeClient {
       Number(minute) <= 59 && Number(second) <= 59 &&
       (offsetHour === undefined || (Number(offsetHour) <= 23 && Number(offsetMinute) <= 59))
   }
+  private invalidateFreshness() {
+    this.lastVerifiedAt = null
+    if (this.freshnessCheckHandle !== null) {
+      const clear = this.options.clearFreshnessCheck ?? ((handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>))
+      clear(this.freshnessCheckHandle)
+      this.freshnessCheckHandle = null
+    }
+    this.freshnessCheckPending = false
+  }
   private scheduleFreshnessCheck() {
     if (this.freshnessCheckPending || this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
+    const remaining = this.freshnessTimeoutMs() - (this.now() - this.lastVerifiedAt)
+    if (remaining <= 0) { this.setState('STALE'); return }
     this.freshnessCheckPending = true
-    const schedule = this.options.scheduleFreshnessCheck ?? ((fn: () => void, delay: number) => setTimeout(fn, delay))
-    const check = () => {
-      this.freshnessCheckPending = false
-      if (this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
-      const remaining = this.freshnessTimeoutMs() - (this.now() - this.lastVerifiedAt)
-      if (remaining <= 0) { this.setState('STALE'); return }
-      this.scheduleFreshnessCheck()
+    const defaultSchedule = (fn: () => void, delay: number) => {
+      const handle = setTimeout(fn, delay)
+      if (typeof handle === 'object' && 'unref' in handle) handle.unref()
+      return handle
     }
-    schedule(check, this.freshnessTimeoutMs())
+    const schedule = this.options.scheduleFreshnessCheck ?? defaultSchedule
+    this.freshnessCheckHandle = schedule(() => {
+      this.freshnessCheckPending = false
+      this.freshnessCheckHandle = null
+      if (this.state !== 'SYNCHRONIZED' || this.lastVerifiedAt === null) return
+      this.scheduleFreshnessCheck()
+    }, remaining)
   }
   private freshnessTimeoutMs() { return this.options.freshnessTimeoutMs ?? 30000 }
   private scheduleReconnect() {
@@ -360,7 +387,11 @@ export class RealtimeClient {
     const hasResyncRequired = [...this.reconciliation.values()].some((value) => value.state === 'RESYNC_REQUIRED')
     this.setState(hasResyncRequired ? 'RESYNC_REQUIRED' : 'DEGRADED')
   }
-  private setState(state: ReconcilerState) { this.state = state; this.stateListeners.forEach((fn) => fn(state, this.latencyMs)) }
+  private setState(state: ReconcilerState) {
+    if (state !== 'SYNCHRONIZED') this.invalidateFreshness()
+    this.state = state
+    this.stateListeners.forEach((fn) => fn(state, this.latencyMs))
+  }
   public getState() { return this.state }
   public getLatency() { return this.latencyMs }
   public onStateChange(fn: (state: ReconcilerState, latencyMs: number | null) => void) { this.stateListeners.add(fn); fn(this.state, this.latencyMs); return () => this.stateListeners.delete(fn) }

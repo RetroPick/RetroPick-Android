@@ -26,6 +26,13 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$verify_dir"
+sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
+if [ ! -d "$sdk_root" ]; then
+  printf '%s\n' 'verify:android requires ANDROID_HOME/ANDROID_SDK_ROOT or /opt/android-sdk' >&2
+  exit 1
+fi
+export ANDROID_HOME="$sdk_root"
+export ANDROID_SDK_ROOT="$sdk_root"
 pnpm install --frozen-lockfile
 pnpm exec tsc --noEmit
 pnpm lint

@@ -269,6 +269,25 @@ test('realtime freshness expiry revokes a live readiness binding until a new ver
   stop()
 })
 
+test('realtime freshness reschedules only the remaining liveness interval after a newer snapshot', () => {
+  const socket = new FakeSocket()
+  let now = 0
+  const checks: Array<() => void> = []
+  const delays: number[] = []
+  const client = new RealtimeClient({
+    url: production.NEXT_PUBLIC_BFF_WS_URL, socketFactory: () => socket, now: () => now, freshnessTimeoutMs: 1000,
+    scheduleFreshnessCheck: (fn, delay) => { checks.push(fn); delays.push(delay); return checks.length },
+  })
+  client.subscribeToken('token-1', 'market-1')
+  client.connect(); socket.open(); socket.message(dataEnvelope('orderbook.snapshot', 1))
+  now = 900
+  socket.message(dataEnvelope('orderbook.snapshot', 2, { eventId: 'newer-snapshot' }))
+  now = 1000
+  checks.shift()!()
+  assert.deepEqual(delays, [1000, 900])
+  client.dispose()
+})
+
 test('realtime cancels owned freshness checks on disconnect and disposal', () => {
   const socket = new FakeSocket()
   const checks: Array<() => void> = []

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { resolveRuntimeConfig, RuntimeConfigurationError } from '../lib/runtime-config.ts'
 import { MarketsTerminalClient } from '../lib/markets-terminal-client.ts'
 import { RealtimeClient, type WebSocketLike } from '../lib/realtime-client.ts'
-import { fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
+import { classifyMarketCategory, fetchLivePolymarketMarkets } from '../lib/polymarket-service.ts'
 import { canonicalOrderBookDeltaPayload, controlEnvelope, dataEnvelope } from './fixtures/realtime-protocol.ts'
 
 const production = {
@@ -108,6 +108,11 @@ test('Polymarket market BFF request explicitly includes session-cookie credentia
   }
 
   assert.equal(requestInit?.credentials, 'include')
+})
+
+test('market classification retains supported science and stocks categories', () => {
+  assert.equal(classifyMarketCategory('biology medicine'), 'Science')
+  assert.equal(classifyMarketCategory('NYSE equity shares'), 'Stocks')
 })
 
 class FakeSocket implements WebSocketLike {

@@ -2,11 +2,14 @@
   "name": "my-project",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:bff-boundary": "node --test --experimental-transform-types tests/bff-boundary.test.ts",
+    "verify:android": "bash scripts/verify-android-build.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

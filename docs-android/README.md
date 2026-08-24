@@ -32,3 +32,8 @@ Dokumentasi spesifikasi fitur, arsitektur, dan kontrak OpenAPI yang disalin dari
 ## 📜 3. Trading Lifecycle & OpenAPI Contract
 - [ORDER_LIFECYCLE.md](file:///c:/Project%20Web3/RetroPick-Android/docs/polymarket/ORDER_LIFECYCLE.md) — Alur transaksi Limit Order, EIP-712 wallet signing, dan rekonsiliasi.
 - [markets-v1.yaml](file:///c:/Project%20Web3/RetroPick-Android/docs/schemas/markets-v1.yaml) — Kontrak OpenAPI kanonikal `markets-v1` yang dikonsumsi oleh Ktor/Retrofit Kotlin client.
+
+---
+
+## ✅ 4. Release Gates
+- [BUILD_GATES.md](BUILD_GATES.md) — Urutan gate reproducible untuk typecheck, boundary tests, static web export, Capacitor sync, dan Gradle Android. Gunakan `pnpm run verify:android`.

@@ -1,6 +1,6 @@
 'use client'
 
-import { type Market, type MarketOption } from './retropick-data'
+import { type Market, type MarketOption } from './retropick-data.ts'
 
 const BANNED_KEYWORDS = [
   'trump',
@@ -31,10 +31,7 @@ const BANNED_KEYWORDS = [
   'government',
 ]
 
-export type MarketCategoryEnum = Exclude<
-  Market['category'],
-  'Science' | 'Stocks'
->
+export type MarketCategoryEnum = Market['category']
 
 const PRIORITY_ORDER: MarketCategoryEnum[] = [
   'Sports',

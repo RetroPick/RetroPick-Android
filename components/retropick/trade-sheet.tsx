@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { LimitOrderModal } from './limit-order-modal'
 import { type Market, getSafeMarketImage } from '@/lib/retropick-data'
+import { cn } from '@/lib/utils'
 
 const PRESETS = [10, 25, 50, 100]
 

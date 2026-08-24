@@ -492,7 +492,10 @@ export function AppShell() {
                       )}
                       {tab === 'intelligence' && (
                         <IntelligenceScreen 
-                          onSelectMarket={openMarket}
+                          onSelectMarket={(marketId) => {
+                            const market = markets.find((candidate) => candidate.id === marketId)
+                            if (market) openMarket(market)
+                          }}
                           onEnableWhaleAlerts={requestWhaleAlertNotificationPermission}
                         />
                       )}

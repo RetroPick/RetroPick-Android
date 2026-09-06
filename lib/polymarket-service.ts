@@ -31,10 +31,7 @@ const BANNED_KEYWORDS = [
   'government',
 ]
 
-export type MarketCategoryEnum = Exclude<
-  Market['category'],
-  'Science' | 'Stocks'
->
+export type MarketCategoryEnum = Market['category']
 
 const PRIORITY_ORDER: MarketCategoryEnum[] = [
   'Sports',
@@ -339,8 +336,11 @@ export async function fetchLivePolymarketMarkets(): Promise<Market[]> {
   }
 
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
     const targetUrl = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=40&order=volume&ascending=false'
-    const response = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl))
+    const response = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl), { signal: controller.signal })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)

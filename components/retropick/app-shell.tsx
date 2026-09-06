@@ -270,9 +270,17 @@ export function AppShell() {
     }
   }, [dark])
 
-  const openMarket = (m: Market) => {
-    setDetail(m)
-    setCategoryDetail(null)
+  const openMarket = (mOrId: Market | string) => {
+    if (typeof mOrId === 'string') {
+      const found = markets.find((m) => m.id === mOrId)
+      if (found) {
+        setDetail(found)
+        setCategoryDetail(null)
+      }
+    } else {
+      setDetail(mOrId)
+      setCategoryDetail(null)
+    }
   }
 
   const handleDisconnect = () => {

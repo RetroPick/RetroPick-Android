@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { PanelLeft, Bell, Wallet, Copy, LogOut, ShieldCheck, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export type Tab = 'explore' | 'markets' | 'portfolio'
+export type Tab = 'explore' | 'markets' | 'intelligence' | 'portfolio'
 
 export function TopBar({
   title,

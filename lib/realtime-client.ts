@@ -110,9 +110,7 @@ class RealtimeClient {
 
       this.ws.onclose = () => {
         this.cleanupWS()
-        this.setState('RESYNC_REQUIRED')
-        // Auto reconnect fallback
-        setTimeout(() => this.connect(url), 5000)
+        this.activateSimulationMode()
       }
     } catch (e) {
       console.warn('[RealtimeClient] Connection failed, activating Realtime Simulation:', e)
